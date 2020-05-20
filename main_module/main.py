@@ -40,14 +40,23 @@ for cell in table_body:
     updateDate = re.search("[a-z A-Z]* [0-9]{2}",info)
     print(teacherName, className)
 
-driver.get("https://my.iusd.org/Transcripts.aspx")
-gDetailTable = driver.find_elements_by_xpath("//*[@id='ctl00_MainContent_subHIS_Histories_UpdatePanel']/table/tbody/tr/td[1]/table")
+# driver.get("https://my.iusd.org/Transcripts.aspx")
+# gDetailTable = driver.find_elements_by_xpath("//*[@id='ctl00_MainContent_subHIS_Histories_UpdatePanel']/table/tbody/tr/td[1]/table")
 
-html = gDetailTable[0].get_attribute('innerHTML')
-soup = BeautifulSoup(html,"html.parser")
-table_row = soup.find_all("tr",id = re.compile(r'.*_ReadRow\d+'))
-print(table_row[0])
+# html = gDetailTable[0].get_attribute('innerHTML')
+# soup = BeautifulSoup(html,"html.parser")
+# table_row = soup.find_all("tr",id = re.compile(r'.*_ReadRow\d+'))
+driver.get("https://my.iusd.org/Widgets/ClassSummary/GetClassSummary?IsProfile=True&_=1589939767614")
+soup = BeautifulSoup(driver.page_source, "html.parser")
+mainJson = soup.find("pre").text
+
 driver.quit()
-#grade = [cell.find(class_="MarkandGrade").text for cell in table_body]
+with open ('data.txt', 'w+') as json_file:
+    json.dump(mainJson, json_file)
+    newJson = json.load(json_file)
+
+
+
+
 
 
