@@ -1,29 +1,39 @@
 import json
 from bs4 import BeautifulSoup
+from selenium import webdriver
+import time
 
 
-with open ('data.txt', 'r') as json_file:
-    file = json.load(json_file)
+driver = webdriver.Chrome("/Users/jevonmao/Git_directory/Aeries-scraping/chromedriver")
+url = "https://my.iusd.org/"
+driver.get(url)
+
+username = driver.find_element_by_id("portalAccountUsername")
+password = driver.find_element_by_id("portalAccountPassword")
+
+username.send_keys("jevkevceo@gmail.com")
+nextItem = driver.find_element_by_id("next")
+nextItem.click()
+password.send_keys("511969")
+
+driver.find_element_by_id("LoginButton").click()
+time.sleep(5)
+cookies = driver.get_cookies()
 
 
-
-# driver.get("https://my.iusd.org/Transcripts.aspx")
-# gDetailTable = driver.find_elements_by_xpath("//*[@id='ctl00_MainContent_subHIS_Histories_UpdatePanel']/table/tbody/tr/td[1]/table")
-
-# html = gDetailTable[0].get_attribute('innerHTML')
-# soup = BeautifulSoup(html,"html.parser")
-# table_row = soup.find_all("tr",id = re.compile(r'.*_ReadRow\d+'))
 driver.get("https://my.iusd.org/Widgets/ClassSummary/GetClassSummary?IsProfile=True&_=1589939767614")
 soup = BeautifulSoup(driver.page_source, "html.parser")
 mainJson = soup.find("pre").text
 
 driver.quit()
+
 with open ('data.txt', 'w+') as json_file:
     json.dump(mainJson, json_file)
     newJson = json.load(json_file)
 
 
-
+with open ('data.txt', 'r') as json_file:
+    file = json.load(json_file)
 
 parsed_json = [{k:v for k,v in classes.items() if k in ['Period', 'RoomNumber', 'TeacherName', 'Percent', 'Average', 'CurrentMark', 'MissingAssignments', 'LastUpdated', 'SchoolName','DistrictName']} for classes in file]
 
