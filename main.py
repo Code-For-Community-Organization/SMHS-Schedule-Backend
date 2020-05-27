@@ -1,52 +1,57 @@
+import json
 from bs4 import BeautifulSoup
 from selenium import webdriver
-import time
-import json
-import re
-import requests
 
 
+class RequestData:
+    def __init__(self, URL, password, username):
+        self.URL = URL
+        self.password = password
+        self.username = username
 
-driver = webdriver.Chrome("/Users/jevonmao/Git_directory/Aeries-scraping/chromedriver")
-url = "https://my.iusd.org/"
-driver.get(url)
+        self.driver = webdriver.Chrome("/Users/jevonmao/Git_directory/Scraping_Aeries/ext/chromedriver83")
+        self.driver.get(self.URL)
+        username = self.driver.find_element_by_id("portalAccountUsername")
+        password = self.driver.find_element_by_id("portalAccountPassword")
 
-username = driver.find_element_by_id("portalAccountUsername")
-password = driver.find_element_by_id("portalAccountPassword")
+        username.send_keys("jevkevceo@gmail.com")
+        password.send_keys("511969")
 
-username.send_keys("jevkevceo@gmail.com")
-nextItem = driver.find_element_by_id("next")
-nextItem.click()
-password.send_keys("511969")
+        self.driver.find_element_by_id("next").click()
+        self.driver.find_element_by_id("next").click() 
+        self.driver.implicitly_wait(5)
 
-driver.find_element_by_id("LoginButton").click()
-time.sleep(5)
-cookies = driver.get_cookies()
+    def LoadJson(self):
+        self.driver.get("https://my.iusd.org/Widgets/ClassSummary/GetClassSummary?IsProfile=True")
+        soup = BeautifulSoup(self.driver.page_source, "html.parser")
+        mainJson = soup.find("pre").text
 
-indexa = cookies.index('_pk_id')
-print(indexa)
-sessionid=cookies[3]['value']
-aereisnet=cookies[1]['value']
-pk_id=cookies[indexa]['value']
-print(pk_id)
-PARAMS ={
-'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-'Accept-Encoding': 'gzip, deflate, br',
-'Accept-Language': 'en-US,en;',
-'Connection': 'keep-alive',
-'Cookie': 'AeriesNet='+aereisnet+';'+'ASP.NET_SessionId='+sessionid+';'+'_pk_id.1.95d3='+pk_id,
-'Host': 'my.iusd.org',
-'Sec-Fetch-Dest': 'document',
-'Sec-Fetch-Mode': 'navigate',
-'Sec-Fetch-Site': 'none',
-'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36',
-'X-Requested-With': 'XMLHttpRequest'
-}
+        self.driver.quit()
+        return mainJson
+
+    @staticmethod
+    def writeFile(filename, JSONFile):
+        with open (filename, 'w') as json_file:
+            json_file.write(JSONFile)
+        
 
 
-URL = " https://my.iusd.org/Widgets/ClassSummary/GetClassSummary?IsProfile=True"
-r = requests.get(url = URL, params = PARAMS) 
+class ProcessData:
+    def __init__(self):
+        with open ('data.txt','r') as json_file:
+            self.file = json.load(json_file)
 
-print(r.text)
+    def processData(self):
+        parsed_json = [{k:v for k,v in classes.items() if k in ['Period', 'RoomNumber', 'TeacherName', 'Percent', 'Average', 'CurrentMark', 'MissingAssignments', 'LastUpdated', 'SchoolName','DistrictName']} for classes in self.file]
 
-'ASP.NET_SessionId=wcyarn3lbyyngbcmtbldbyr3; AeriesNet=LastSC_0=501&LastSN_0=5125&LastID_0=169160019; _pk_id.1.95d3=8e2458f3afe66422.1588987408.1.1588987408.1588987408.; _pk_ses.1.95d3=1'
+        for classes in parsed_json:
+            soup = BeautifulSoup(classes["MissingAssignments"],"html.parser")
+            misAssignNum = soup.get_text()
+            classes["MissingAssignments"] = misAssignNum
+        return parsed_json
+
+
+RequestData = RequestData("https://my.iusd.org/LoginParent.aspx",511969,"jevkevceo@gmail.com")
+ProcessData = ProcessData()
+
+
