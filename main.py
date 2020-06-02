@@ -8,17 +8,17 @@ class RequestData:
         self.URL = URL
         self.password = password
         self.username = username
-
+        print(self.username)
         self.driver = webdriver.Chrome("/Users/jevonmao/Git_directory/Scraping_Aeries/ext/chromedriver83")
         self.driver.get(self.URL)
         username = self.driver.find_element_by_id("portalAccountUsername")
-        password = self.driver.find_element_by_id("portalAccountPassword")
-
-        username.send_keys("jevkevceo@gmail.com")
-        password.send_keys("511969")
-
+        username.send_keys(self.username)
         self.driver.find_element_by_id("next").click()
-        self.driver.find_element_by_id("next").click() 
+
+        password = self.driver.find_element_by_id("portalAccountPassword")
+        password.send_keys(self.password)
+
+        self.driver.find_element_by_id("LoginButton").click() 
         self.driver.implicitly_wait(5)
 
     def LoadJson(self):
@@ -38,7 +38,7 @@ class RequestData:
 
 class ProcessData:
     def __init__(self):
-        with open ('data.txt','r') as json_file:
+        with open ('data.json','r') as json_file:
             self.file = json.load(json_file)
 
     def processData(self):
@@ -52,6 +52,8 @@ class ProcessData:
 
 
 RequestData = RequestData("https://my.iusd.org/LoginParent.aspx",511969,"jevkevceo@gmail.com")
+mainJson = RequestData.LoadJson()
+RequestData.writeFile("data.json",mainJson)
 ProcessData = ProcessData()
-
+print(ProcessData.processData())
 
