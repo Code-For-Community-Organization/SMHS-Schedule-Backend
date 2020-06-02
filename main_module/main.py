@@ -1,7 +1,8 @@
 import json
 from bs4 import BeautifulSoup
 from selenium import webdriver
-
+from selenium.webdriver.support.select import Select
+import time
 
 class RequestData:
     def __init__(self, URL, password, username):
@@ -21,13 +22,38 @@ class RequestData:
         self.driver.find_element_by_id("LoginButton").click() 
         self.driver.implicitly_wait(5)
 
-    def LoadJson(self):
+    def LoadSummary(self):
         self.driver.get("https://my.iusd.org/Widgets/ClassSummary/GetClassSummary?IsProfile=True")
         soup = BeautifulSoup(self.driver.page_source, "html.parser")
         mainJson = soup.find("pre").text
 
         self.driver.quit()
         return mainJson
+
+    def LoadDetail(self):
+        self.driver.get("https://my.iusd.org/GradebookDetails.aspx")
+
+        selectBox = self.driver.find_element_by_id('ctl00_MainContent_subGBS_dlGN')
+        options = [option.get_attribute("value") for option in selectBox.find_elements_by_tag_name("option")]
+        for value in options:
+            selector = Select(self.driver.find_element_by_id('ctl00_MainContent_subGBS_dlGN'))
+            selector.select_by_value(value)
+            time.sleep(3)
+
+            soup = BeautifulSoup(self.driver.page_source, "html.parser")
+            assignmentDiv = soup.find("div", class_="AllAssignments")
+            assignmentBody = assignmentDiv.find("table").find("tbody")
+            assignment = assignmentBody.findAll("tr",recursive=False)
+       
+            for a in assignment:
+                
+                assignmentTitle = a.find(class_="TextHeading")
+                assignmentDes = a.find(class_="TextSubSectionCategory")
+                assignmentDetail = a.findAll(class_="InlineData")
+                if assignmentTitle and assignmentDes and assignmentDetail != []:
+                    print(assignmentTitle.text,assignmentDes.text,[detailText.text for detailText in assignmentDetail])
+        self.driver.quit()
+
 
     @staticmethod
     def writeFile(filename, JSONFile):
@@ -52,8 +78,9 @@ class ProcessData:
 
 
 RequestData = RequestData("https://my.iusd.org/LoginParent.aspx",511969,"jevkevceo@gmail.com")
-mainJson = RequestData.LoadJson()
-RequestData.writeFile("data.json",mainJson)
-ProcessData = ProcessData()
-print(ProcessData.processData())
+# mainJson = RequestData.LoadSummary()
+# RequestData.writeFile("data.json",mainJson)
+# ProcessData = ProcessData()
+# print(ProcessData.processData())
+RequestData.LoadDetail()
 
