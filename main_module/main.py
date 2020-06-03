@@ -4,6 +4,7 @@ from selenium import webdriver
 from selenium.webdriver.support.select import Select
 import time
 
+
 class RequestData:
     def __init__(self, URL, password, username):
         self.URL = URL
@@ -68,7 +69,7 @@ class ProcessData:
             self.file = json.load(json_file)
 
     def processData(self):
-        parsed_json = [{k:v for k,v in classes.items() if k in ['Period', 'RoomNumber', 'TeacherName', 'Percent', 'Average', 'CurrentMark', 'MissingAssignments', 'LastUpdated', 'SchoolName','DistrictName']} for classes in self.file]
+        parsed_json = [{k:v for k,v in classes.items() if k in ["Period", 'RoomNumber','CourseName', 'TeacherName', 'Percent', 'Average', 'CurrentMark', 'MissingAssignments', 'LastUpdated', 'TermGrouping','SchoolName','DistrictName']} for classes in self.file]
 
         for classes in parsed_json:
             soup = BeautifulSoup(classes["MissingAssignments"],"html.parser")
@@ -77,10 +78,12 @@ class ProcessData:
         return parsed_json
 
 
-RequestData = RequestData("https://my.iusd.org/LoginParent.aspx",511969,"jevkevceo@gmail.com")
+# RequestData = RequestData("https://my.iusd.org/LoginParent.aspx",511969,"jevkevceo@gmail.com")
 # mainJson = RequestData.LoadSummary()
 # RequestData.writeFile("data.json",mainJson)
-# ProcessData = ProcessData()
-# print(ProcessData.processData())
-RequestData.LoadDetail()
+ProcessData = ProcessData()
+with open('parsedSummary.json','w') as json_file:
+    processedData = str(ProcessData.processData()).replace("\'", "\"")
+    json_file.write(processedData)
+# RequestData.LoadDetail()
 

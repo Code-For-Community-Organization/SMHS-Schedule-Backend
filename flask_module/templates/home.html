@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+
+
+
+    <title>Grade Viewer</title>
+  
+</head>
+<table class="table">
+    <thead class="thead-dark">
+        <tr>
+            <th scope="col">Current Term</th>
+    
+          </tr>
+        </thead>
+    <thead>
+      <tr>
+        <th scope="col">Room Number</th>
+        <th scope="col">Class</th>
+        <th scope="col">Period</th>
+        <th scope="col">Teacher Name</th>
+        <th scope="col">Grade Percent</th>
+        <th scope="col">Letter Mark</th>
+        <th scope="col">Last Updated</th>
+
+      </tr>
+    </thead>
+    <tbody>
+      {% for class in sumGradeJson%}
+        {% if class.get("TermGrouping") == "Current Terms" %}
+            <tr>
+                <th scope="row">{{ class.get("RoomNumber") }}</th>
+                <td>{{ class.get("CourseName") }}</td>
+                <td>{{ class.get("Period") }}</td>
+                <td>{{ class.get("TeacherName") }}</td>
+                <td>{{ class.get("Percent") }}</td>
+                <td>{{ class.get("CurrentMark") }}</td>
+                <td>{{ class.get("LastUpdated") }}</td>
+            </tr>
+    </tbody>
+    {% endif %}
+    {% endfor %}
+
+    <thead class="thead-dark">
+        <tr>
+            <th scope="col">Prior Term</th>
+            
+          </tr>
+        </thead> 
+        <thead>
+            <tr>
+              <th scope="col">Room Number</th>
+              <th scope="col">Class</th>
+              <th scope="col">Period</th>
+              <th scope="col">Teacher Name</th>
+              <th scope="col">Grade Percent</th>
+              <th scope="col">Letter Mark</th>
+              <th scope="col">Last Updated</th>
+      
+            </tr>
+          </thead>
+          {% for class in sumGradeJson%}
+            {% if class.get("TermGrouping") != "Current Terms" %}
+              <tbody>
+                <tr>
+                    <th scope="row">{{ class.get("RoomNumber") }}</th>
+                    <td>{{ class.get("CourseName") }}</td>
+                    <td>{{ class.get("Period") }}</td>
+                    <td>{{ class.get("TeacherName") }}</td>
+                    <td>{{ class.get("Percent") }}</td>
+                    <td>{{ class.get("CurrentMark") }}</td>
+                    <td>{{ class.get("LastUpdated") }}</td>
+                </tr>
+              </tbody>
+        {% endif %}
+
+      {% endfor %}
+    </tbody>
+  </table>
+ 
+  <div class="input-group mb-3" >
+    <button type="button" class="btn btn-primary">Notify Me</button>
+    <form >
+    <input name="Email" type="text" class="form-control" placeholder="Your Email Here" aria-label="Recipient's username" aria-describedby="basic-addon2">
+  </form>
+</div>
