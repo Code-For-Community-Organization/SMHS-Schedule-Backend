@@ -9,8 +9,8 @@ app = Flask(__name__)
 app.config['MAIL_SERVER'] = "smtp.googlemail.com"
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USERNAME'] = "woodburyjevonmao@gmail.com"
-app.config['MAIL_PASSWORD'] = "SelinaJevon"
+app.config['MAIL_USERNAME'] = ""
+app.config['MAIL_PASSWORD'] = ""
 mail = Mail(app)
 with open("parsedSummary.json", "r") as f:
     sumGradeJson = json.load(f)
