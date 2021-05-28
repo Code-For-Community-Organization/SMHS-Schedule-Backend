@@ -23,7 +23,13 @@ class Request:
         self.URL = URL
         self.password = password
         self.username = username
-        self.driver = webdriver.Chrome("D:/Programming/Scraping_Aeries/ext/chromedriver.exe")
+        GOOGLE_CHROME_PATH = '/app/.apt/usr/bin/google_chrome'
+        CHROMEDRIVER_PATH = '/app/.chromedriver/bin/chromedriver'
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.binary_location = GOOGLE_CHROME_PATH
+        self.driver = webdriver.Chrome(executable_path=CHROMEDRIVER_PATH, chrome_options=chrome_options)
         self.driver.get(self.URL)
         username = self.driver.find_element_by_id("portalAccountUsername")
         username.send_keys(self.username)
