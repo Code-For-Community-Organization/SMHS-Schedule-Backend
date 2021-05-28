@@ -1,6 +1,6 @@
 from json.decoder import JSONDecodeError
 from flask import Flask, abort, Response, request
-from src.scraper import Request, DataParser, Period, PeriodEncoder
+from scraper import Request, DataParser, Period, PeriodEncoder
 
 app = Flask(__name__)
 
