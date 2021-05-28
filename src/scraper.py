@@ -1,9 +1,6 @@
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.webdriver.support.select import Select
-import time
 from dataclasses import dataclass
-import typing
 from typing import Any
 from json.encoder import JSONEncoder
 import json
