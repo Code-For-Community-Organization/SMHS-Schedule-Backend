@@ -1,9 +1,3 @@
-from flask import Flask, render_template, url_for, abort, Response, request
-import json
-import os
-import json
-from json.encoder import JSONEncoder
-from urllib import parse
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.support.select import Select
@@ -11,6 +5,8 @@ import time
 from dataclasses import dataclass
 import typing
 from typing import Any
+from json.encoder import JSONEncoder
+import json
 
 @dataclass
 class Period():
@@ -20,6 +16,7 @@ class Period():
     gradePercent: float
     currentMark: str
     isPrior: bool
+
 class PeriodEncoder(JSONEncoder):
     def default(self, o):
         return o.__dict__
@@ -47,31 +44,6 @@ class Request:
         self.driver.quit()
         return soup.text
 
-    def loadDetail(self):
-        self.driver.get("https://my.iusd.org/GradebookDetails.aspx")
-
-        selectBox = self.driver.find_element_by_id('ctl00_MainContent_subGBS_dlGN')
-        options = [option.get_attribute("value") for option in selectBox.find_elements_by_tag_name("option")]
-        for value in options:
-            selector = Select(self.driver.find_element_by_id('ctl00_MainContent_subGBS_dlGN'))
-            selector.select_by_value(value)
-            time.sleep(3)
-
-            soup = BeautifulSoup(self.driver.page_source, "html.parser")
-            assignmentDiv = soup.find("div", class_="AllAssignments")
-            assignmentBody = assignmentDiv.find("table").find("tbody")
-            assignment = assignmentBody.findAll("tr",recursive=False)
-       
-            for a in assignment:
-                
-                assignmentTitle = a.find(class_="TextHeading")
-                assignmentDes = a.find(class_="TextSubSectionCategory")
-                assignmentDetail = a.findAll(class_="InlineData")
-                if assignmentTitle and assignmentDes and assignmentDetail != []:
-                    print(assignmentTitle.text,assignmentDes.text,[detailText.text for detailText in assignmentDetail])
-        self.driver.quit()
-
-
     @staticmethod
     def writeFile(filename, JSONFile):
         with open (filename, 'w') as json_file:
@@ -96,26 +68,11 @@ class DataParser:
             allClasses.append(currentPeriod)
         return allClasses
 
-
-app = Flask(__name__)
-
-app.config['DEBUG'] = True
-
-@app.route('/api/v1/grades/', methods=['GET'])
-def home():
-    if 'email' in request.args and 'password' in request.args:
-        email: str = request.args['email']
-        password: str = request.args['password']
-        requestData: Request = Request("https://aeries.smhs.org/Parent/LoginParent.aspx?page=Dashboard.aspx",
-                                       password,
-                                       email)
-        rawJson = requestData.loadSummary()
-        dataParser: DataParser = DataParser(rawJson)
-        parsedPeriods: list[Period] = dataParser.parseData()
-        encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
-        return encodedPeriods
-    else:
-        abort(Response("Error: NO email and password provided. Please provide a valid email and password login."))
-
 if __name__ == "__main__":
-    app.run()
+    requestData: Request = Request("https://aeries.smhs.org/Parent/LoginParent.aspx?page=Dashboard.aspx",
+                                        "password",
+                                        "email")
+    rawJson = requestData.loadSummary()
+    dataParser: DataParser = DataParser(rawJson)
+    parsedPeriods: list[Period] = dataParser.parseData()
+    encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
