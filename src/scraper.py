@@ -85,8 +85,8 @@ class DataParser:
 
 if __name__ == "__main__":
     requestData: Request = Request("https://aeries.smhs.org/Parent/LoginParent.aspx?page=Dashboard.aspx",
-                                        "Mao511969",
-                                        "jingwen.mao@smhsstudents.org")
+                                        "",
+                                        "")
     rawJson = requestData.loadSummary()
     dataParser: DataParser = DataParser(rawJson)
     parsedPeriods: list[Period] = dataParser.parseData()
