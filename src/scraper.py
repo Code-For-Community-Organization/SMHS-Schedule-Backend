@@ -1,12 +1,15 @@
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.support.select import Select
+from selenium.webdriver.chrome.options import Options
 import time
 from dataclasses import dataclass
 import typing
 from typing import Any
 from json.encoder import JSONEncoder
 import json
+import os
+from os.path import dirname, abspath
 
 @dataclass
 class Period():
@@ -23,11 +26,23 @@ class PeriodEncoder(JSONEncoder):
 
 class Request:
     def __init__(self, URL, password, username):
+        #Configure website URL and logins
         self.URL = URL
         self.password = password
         self.username = username
-        self.driver = webdriver.Chrome("D:/Programming/Scraping_Aeries/ext/chromedriver.exe")
+
+        #Set chrome options
+        options = Options()
+        options.add_argument('--headless')
+        options.add_argument('--disable-gpu')
+
+        #Configure webdriver
+        parentDirectory = dirname(dirname(abspath(__file__)))
+        driverLocation = os.path.join(parentDirectory, "ext/", "chromedriver.exe")
+        print(driverLocation)
+        self.driver = webdriver.Chrome(driverLocation, options=options)
         self.driver.get(self.URL)
+
         username = self.driver.find_element_by_id("portalAccountUsername")
         username.send_keys(self.username)
         self.driver.find_element_by_id("next").click()
@@ -70,8 +85,8 @@ class DataParser:
 
 if __name__ == "__main__":
     requestData: Request = Request("https://aeries.smhs.org/Parent/LoginParent.aspx?page=Dashboard.aspx",
-                                        "password",
-                                        "email")
+                                        "Mao511969",
+                                        "jingwen.mao@smhsstudents.org")
     rawJson = requestData.loadSummary()
     dataParser: DataParser = DataParser(rawJson)
     parsedPeriods: list[Period] = dataParser.parseData()
