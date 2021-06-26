@@ -1,7 +1,7 @@
 from logging import error
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.common.exceptions import TimeoutException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support.select import Select
@@ -95,6 +95,8 @@ class Request:
 
         except TimeoutError:
             raise TimeoutError("Unknown error. Timeout waiting for the main grades page to load.")
+        except NoSuchElementException:
+            pass
 
     def loadSummary(self):
         self.driver.get("https://aeries.smhs.org/Parent/Widgets/ClassSummary/GetClassSummary?IsProfile=True&_=1622154593572")
