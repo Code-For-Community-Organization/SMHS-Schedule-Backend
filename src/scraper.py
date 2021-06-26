@@ -1,7 +1,12 @@
+from logging import error
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support import expected_conditions as EC
 import time
 from dataclasses import dataclass
 import typing
@@ -23,6 +28,28 @@ class Period():
 class PeriodEncoder(JSONEncoder):
     def default(self, o):
         return o.__dict__
+class FailedAttemptsError(Exception):
+    pass
+
+class ValidationError(Exception):
+    pass
+
+class EmptyPasswordError(Exception):
+    pass
+
+#https://stackoverflow.com/questions/16462177/selenium-expected-conditions-possible-to-use-or
+class AnyEc:
+    """ Use with WebDriverWait to combine expected_conditions
+        in an OR.
+    """
+    def __init__(self, *args):
+        self.ecs = args
+    def __call__(self, driver):
+        for fn in self.ecs:
+            try:
+                if fn(driver): return True
+            except:
+                pass
 
 class Request:
     def __init__(self, URL, password, username):
@@ -33,25 +60,41 @@ class Request:
 
         #Set chrome options
         options = Options()
-        options.add_argument('--headless')
+        #options.add_argument('--headless')
         options.add_argument('--disable-gpu')
 
         #Configure webdriver
         parentDirectory = dirname(dirname(abspath(__file__)))
         driverLocation = os.path.join(parentDirectory, "ext/", "chromedriver.exe")
-        print(driverLocation)
         self.driver = webdriver.Chrome(driverLocation, options=options)
         self.driver.get(self.URL)
 
+    def login(self):
         username = self.driver.find_element_by_id("portalAccountUsername")
         username.send_keys(self.username)
         self.driver.find_element_by_id("next").click()
-
         password = self.driver.find_element_by_id("portalAccountPassword")
         password.send_keys(self.password)
+        
+        self.driver.find_element_by_id("LoginButton").click()
+        try:
+            WebDriverWait(self.driver, 8).until(AnyEc(
+                EC.presence_of_element_located((By.ID, "AeriesFullPageBody")),
+                EC.presence_of_element_located((By.ID, "errorContainer"))
+                )
+                )
+            errorMessageBox = self.driver.find_element_by_id("errorContainer")
+            errorMessage: str = errorMessageBox.find_element_by_id("errorMessage").text
+            if errorMessageBox is not None:
+                if "Too many failed login attempts." in errorMessage:
+                    raise FailedAttemptsError("Too many failed login attempts, try again later.")
+                elif "The Username and Password entered are incorrect." in errorMessage:
+                    raise ValidationError("The Username and Password entered are incorrect.")
+                elif "You must enter a password!" in errorMessage:
+                    raise EmptyPasswordError("Empty password. You must enter a password.")
 
-        self.driver.find_element_by_id("LoginButton").click() 
-        self.driver.implicitly_wait(5)
+        except TimeoutError:
+            raise TimeoutError("Unknown error. Timeout waiting for the main grades page to load.")
 
     def loadSummary(self):
         self.driver.get("https://aeries.smhs.org/Parent/Widgets/ClassSummary/GetClassSummary?IsProfile=True&_=1622154593572")
@@ -85,8 +128,13 @@ class DataParser:
 
 if __name__ == "__main__":
     requestData: Request = Request("https://aeries.smhs.org/Parent/LoginParent.aspx?page=Dashboard.aspx",
-                                        "",
-                                        "")
+                                        "Mao511969",
+                                        "jingwen.mao@smhsstudents.org")
+    try:
+        requestData.login()
+    except Exception as e:
+        print(e)
+
     rawJson = requestData.loadSummary()
     dataParser: DataParser = DataParser(rawJson)
     parsedPeriods: list[Period] = dataParser.parseData()
