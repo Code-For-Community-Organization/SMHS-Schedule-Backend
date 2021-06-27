@@ -1,1 +1,1 @@
-# Scraping_Aeries
+# SMHS Schedule Backend
