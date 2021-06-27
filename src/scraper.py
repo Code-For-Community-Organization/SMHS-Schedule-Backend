@@ -59,17 +59,24 @@ class Request:
         self.username = username
 
         #Set chrome options
+        chrome_bin = os.environ.get('GOOGLE_CHROME_BIN')
+        chrome_driver_path = os.environ.get('CHROMEDRIVER_PATH')
         options = Options()
-        options.add_argument('--headless')
-        options.add_argument("--window-size=1920,1080")
-        options.add_argument("--start-maximized")
-        options.add_argument("--headless")
         options.add_argument('--disable-gpu')
+        options.add_argument('--headless')
+        options.add_argument('--no-sandbox')
+        #options.add_argument("--window-size=1920,1080")
+        #options.add_argument("--start-maximized")
+        #options.add_argument("--headless")
+        options.binary_location = chrome_bin
+
+        
 
         #Configure webdriver
-        parentDirectory = dirname(dirname(abspath(__file__)))
-        driverLocation = os.path.join(parentDirectory, "ext/", "chromedriver.exe")
-        self.driver = webdriver.Chrome(driverLocation, options=options)
+        
+        #parentDirectory = dirname(dirname(abspath(__file__)))
+        #driverLocation = os.path.join(parentDirectory, "ext/", "chromedriver.exe")
+        self.driver = webdriver.Chrome(executable_path=chrome_driver_path, options=options)
         self.driver.get(self.URL)
 
     def login(self):
