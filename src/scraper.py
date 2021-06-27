@@ -1,20 +1,15 @@
-from logging import error
 from bs4 import BeautifulSoup
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support.select import Select
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support import expected_conditions as EC
-import time
 from dataclasses import dataclass
-import typing
 from typing import Any
 from json.encoder import JSONEncoder
 import json
 import os
-from os.path import dirname, abspath
 
 @dataclass
 class Period():
@@ -65,17 +60,11 @@ class Request:
         options.add_argument('--disable-gpu')
         options.add_argument('--headless')
         options.add_argument('--no-sandbox')
-        #options.add_argument("--window-size=1920,1080")
-        #options.add_argument("--start-maximized")
-        #options.add_argument("--headless")
         options.binary_location = chrome_bin
 
         
 
         #Configure webdriver
-        
-        #parentDirectory = dirname(dirname(abspath(__file__)))
-        #driverLocation = os.path.join(parentDirectory, "ext/", "chromedriver.exe")
         self.driver = webdriver.Chrome(executable_path=chrome_driver_path, options=options)
         self.driver.get(self.URL)
 
