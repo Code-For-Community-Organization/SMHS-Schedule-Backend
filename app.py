@@ -1,8 +1,5 @@
 from json.decoder import JSONDecodeError
-from flask import Flask, render_template, url_for, abort, Response, request
-import json
-import os
-from urllib import parse
+from flask import Flask, request
 from src.scraper import EmptyPasswordError, FailedAttemptsError, Request, DataParser, Period, PeriodEncoder, ValidationError
 
 app = Flask(__name__)
