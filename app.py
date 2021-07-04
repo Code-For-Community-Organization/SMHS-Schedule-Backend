@@ -4,7 +4,7 @@ from typing import List
     
 def wrapTojsonHTML(content: str, appendBraces: bool = True) -> str:
         preTag: str = '<pre style="word-wrap: break-word; white-space: pre-wrap;">'
-        return f"{preTag}{{ {content} }}</pre>" if appendBraces else f"{preTag}{content}</pre>"
+        return f"{{ {content} }}" if appendBraces else f"{content}"
 
 app = Flask(__name__)
 
