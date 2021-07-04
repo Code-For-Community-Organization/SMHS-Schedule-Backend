@@ -1,1 +1,0 @@
-# SMHS Schedule Backend
