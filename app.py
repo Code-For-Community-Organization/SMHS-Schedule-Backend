@@ -2,8 +2,8 @@ from flask import Flask, request
 from sources.AeriesScraper import Request, DataParser, Period, PeriodEncoder, ValidationError
 from typing import List
     
-def wrapTojsonHTML(content: str) -> str:
-        return f"<pre>{{ {content} }}</pre>"
+def wrapTojsonHTML(content: str, appendBraces: bool = True) -> str:
+        return f"<pre>{{ {content} }}</pre>" if appendBraces else f"<pre>{content}</pre>"
 
 app = Flask(__name__)
 
@@ -25,7 +25,7 @@ def API():
                 dataParser: DataParser = DataParser(rawJson)
                 parsedPeriods: List[Period] = dataParser.parseData()
                 encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
-                return wrapTojsonHTML(encodedPeriods)
+                return wrapTojsonHTML(encodedPeriods, appendBraces=False)
 
             except ValidationError as err:
                 return wrapTojsonHTML(str(err))
