@@ -3,7 +3,8 @@ from sources.AeriesScraper import Request, DataParser, Period, PeriodEncoder, Va
 from typing import List
     
 def wrapTojsonHTML(content: str, appendBraces: bool = True) -> str:
-        return f"<pre>{{ {content} }}</pre>" if appendBraces else f"<pre>{content}</pre>"
+        preTag: str = '<pre style="word-wrap: break-word; white-space: pre-wrap;">'
+        return f"{preTag}{{ {content} }}</pre>" if appendBraces else f"{preTag}{content}</pre>"
 
 app = Flask(__name__)
 
