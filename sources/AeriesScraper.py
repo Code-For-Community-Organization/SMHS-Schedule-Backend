@@ -4,6 +4,8 @@ import requests
 import json
 from typing import List
 import time
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 
 @dataclass
 class Period():
@@ -51,13 +53,26 @@ class Request:
     def login(self):
         #Login information to be sent as payload
         payload: dict[str, str] = {
-            'portalAccountUsername': 'jingwen.mao@smhsstudents.org',
-            'portalAccountPassword': 'Mao511969'}
-    
+            'portalAccountUsername': self.username,
+            'portalAccountPassword': self.password}
+
+        #Setup retry mechanism with total 5 retries, backoff by increasing number of seconds
+        #Retry on connectivity issues and HTTPS status codes given
+        retries = Retry(total=5, backoff_factor=1, status_forcelist=[ 502, 503, 504 ])
+
         #Create a request session (with to automatically close)
-        with requests.Session() as session:
-            post = session.post(self.loginURL, data=payload)
-            self.session: requests.sessions.Session = session
+        self.session = requests.Session()
+
+        #Configure the session retry with matching http pattern, using http adaptor
+        self.session.mount("http://", HTTPAdapter(max_retries=retries))
+        try:
+            post = self.session.post(self.loginURL, data=payload)
+        except requests.exceptions.RequestException as err:
+            # catastrophic error. bail.
+            raise SystemExit(err)
+        except requests.exceptions.HTTPError as err:
+            # Some 4xx http error. bail.
+            raise SystemExit(err)
 
     def fetchSummary(self) -> str:
         #JSON grades URL to fetch
@@ -65,10 +80,25 @@ class Request:
 
         #If the request session is not None (login has been called)
         if self.session is not None:
-            #Get JSON raw text and return it
+
+            #Send a GET request on grades summary JSON url
             content = self.session.get(contentURL)
-            return content.text
-        
+
+            #Handle any possible errors
+            try:
+                #No redirect likely means successful, redirect means failed login
+                if not content.history:
+                    #Forgiveness not permission, test if valid JSON
+                    json.loads(content.text)
+                    return content.text
+                else:
+                    #If redirected to login page, probably invalid username or password
+                    raise ValidationError("Invalid username or password")
+
+            #Handle invalid JSON error
+            except ValueError as err:
+                raise ValidationError(err)
+
 class DataParser:
     
     def __init__(self, rawJSON) -> None:
@@ -93,22 +123,21 @@ class DataParser:
             json_file.write(JSONFile)
 
 if __name__ == "__main__":
-    startTime = time.time()
 
     email: str = input("Enter your email or username: ")
     password: str = input("Enter your password: ")
+    startTime = time.time()
 
-    requestData: Request = Request(password,
-                                   email)
     try:
+        requestData: Request = Request(password,
+                                email)
         requestData.login()
+        rawJson = requestData.fetchSummary()
+        dataParser: DataParser = DataParser(rawJson)
+        parsedPeriods: List[Period] = dataParser.parseData()
+        encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
+        DataParser.writeFile('class-summary.json', JSONFile=encodedPeriods)
     except Exception as e:
         print(e)
-
-    rawJson = requestData.fetchSummary()
-    dataParser: DataParser = DataParser(rawJson)
-    parsedPeriods: List[Period] = dataParser.parseData()
-    encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
-    DataParser.writeFile('class-summary.json', JSONFile=encodedPeriods)
-
+    
     print(f"----- {time.time() - startTime} seconds elapsed -----")
