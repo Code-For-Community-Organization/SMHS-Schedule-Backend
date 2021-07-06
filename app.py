@@ -1,7 +1,7 @@
 from flask import Flask, request, redirect, url_for
 from sources.AeriesScraper import Request, DataParser, Period, PeriodEncoder, ValidationError
 from sources.DatabaseManager import DatabaseManager
-from sources.User import User
+from sources.Student import Student
 from typing import List, Optional, Dict, Any
 from cryptography.fernet import InvalidToken
 import json
@@ -49,7 +49,7 @@ def API():
                 if rawJson is not None:
                     parsedPeriods: List[Period] = Period.convertToPeriods(rawJson)
                     try:
-                        manager.newUserEntry(user=User(email=email, password=password, grades=parsedPeriods))
+                        manager.newUserEntry(user=Student(email=email, password=password, grades=parsedPeriods))
                     except (ValueError, TypeError, InvalidToken) as err:
                         errorMessage: str = f"Internal: {err}"
                         print(errorMessage)

@@ -1,4 +1,4 @@
-from sources.User import Student
+from sources.Student import Student
 import aiohttp
 import asyncio
 from typing import List

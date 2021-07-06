@@ -5,9 +5,9 @@ import json
 from json import JSONDecodeError
 if __name__ == "__main__":
     from AeriesScraper import Period, PeriodEncoder
-    from User import User
+    from Student import Student
 else:
-    from .User import User
+    from .Student import Student
     from .AeriesScraper import Period, PeriodEncoder
 
 debug = True
@@ -53,7 +53,7 @@ class DatabaseManager:
                 print(err)
         return doesContain
 
-    def _isValid(self, user: User) -> bool:
+    def _isValid(self, user: Student) -> bool:
         if user.email == '' or user.password == '':
             return False
         else:
@@ -96,7 +96,7 @@ class DatabaseManager:
             return False
 
     # Instance method - Create new user
-    def newUserEntry(self, user: User):
+    def newUserEntry(self, user: Student):
         if not self._isValid(user):
             raise ValueError("Empty username or password is not allowed.")
         with open(self.databaseName, "a+") as db:
@@ -185,12 +185,12 @@ class DatabaseManager:
             return None
 
     # Instance method
-    def getUserEntryObject(self, email: str) -> Optional[User]:
+    def getUserEntryObject(self, email: str) -> Optional[Student]:
         try:
             entry = self.getUserEntry(email)
             if entry is not None:
             # Construct user object
-                return User(email=entry['email'],
+                return Student(email=entry['email'],
                             password=entry['password'],
                             grades=Period.convertToPeriods(entry['grades']))
             else:
@@ -233,9 +233,9 @@ if __name__ == "__main__":
                              gradePercent=93.5,
                              currentMark="A-",
                              isPrior=False)
-        newUser = User(email="fdsf@smhst.org", password="%",
+        newUser = Student(email="fdsf@smhst.org", password="%",
                        grades=[testPeriod1, testPeriod2])
-        newUser2 = User(email="s", password="1", grades=[
+        newUser2 = Student(email="s", password="1", grades=[
                         testPeriod2, testPeriod1])
         databaseManager1.newUserEntry(user=newUser)
         databaseManager2.newUserEntry(user=newUser2)

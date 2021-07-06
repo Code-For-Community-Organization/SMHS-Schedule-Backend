@@ -3,7 +3,7 @@ import time
 from .AeriesScraper import Period
 from typing import List
 @dataclass
-class User:
+class Student:
     email: str
     password: str
     grades: List[Period]
