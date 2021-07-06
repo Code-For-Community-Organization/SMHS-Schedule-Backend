@@ -7,8 +7,7 @@ from cryptography.fernet import InvalidToken
 
 
 def wrapTojsonHTML(content: str, appendBraces: bool = True) -> str:
-    return f"<pre>{{ {content} }}</pre>" if appendBraces else f"<pre>{content}</pre>"
-
+  return f"<pre>{{ {content} }}</pre>" if appendBraces else f"<pre>{content}</pre>"
 
 app = Flask(__name__)
 
