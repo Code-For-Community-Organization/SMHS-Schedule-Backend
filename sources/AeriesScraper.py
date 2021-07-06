@@ -91,22 +91,17 @@ class DataParser:
         self.rawJSON = rawJSON
 
     def parseData(self) -> List[Period]:
-        allClasses: List[Period] = [json.loads(self.rawJSON,
-                                               object_hook=DataParser.periodDecoder)]
-        return allClasses
-
-    @staticmethod
-    def periodDecoder(period: Dict[str, Any]):
-        if "__type__" in period and period["__type"] == "Period":
+        allClasses: List[Period] = []
+        for period in json.loads(self.rawJSON):
             semesterTime: bool = period['TermGrouping'] == 'Prior Terms'
-            obj: Period = Period(periodNum=period["Period"],
+            currentPeriod: Period = Period(periodNum=period["Period"],
                                     periodName=period["CourseName"],
                                     teacherName=period["TeacherName"],
                                     gradePercent=period["Percent"],
                                     currentMark=period["CurrentMark"],
                                     isPrior=semesterTime)
-            return obj
-
+            allClasses.append(currentPeriod)
+        return allClasses
 
     @staticmethod
     def writeFile(filename: str, JSONFile: Any):
