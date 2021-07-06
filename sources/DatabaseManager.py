@@ -1,13 +1,13 @@
 from cryptography.fernet import Fernet, InvalidToken
-from typing import Optional, Dict, List, Any
+from typing import Optional, Dict, List, Any, overload
 import os
 import json
 from json import JSONDecodeError
 if __name__ == "__main__":
     from AeriesScraper import Period, PeriodEncoder
-    from User import User
+    from Student import Student
 else:
-    from .User import User
+    from .Student import Student
     from .AeriesScraper import Period, PeriodEncoder
 
 debug = True
@@ -53,7 +53,7 @@ class DatabaseManager:
                 print(err)
         return doesContain
 
-    def _isValid(self, user: User) -> bool:
+    def _isValid(self, user: Student) -> bool:
         if user.email == '' or user.password == '':
             return False
         else:
@@ -96,7 +96,7 @@ class DatabaseManager:
             return False
 
     # Instance method - Create new user
-    def newUserEntry(self, user: User):
+    def newUserEntry(self, user: Student):
         if not self._isValid(user):
             raise ValueError("Empty username or password is not allowed.")
         with open(self.databaseName, "a+") as db:
@@ -106,7 +106,8 @@ class DatabaseManager:
             if cipherEmail is not None and cipherPassword is not None:
                 newUser = {'email': cipherEmail,
                            'password': cipherPassword,
-                           'grades': self._newUserGradesEntry(periods=user.grades)}
+                           'grades': self._newUserGradesEntry(periods=user.grades),
+                           'lastUpdated': user.lastUpdated}
                 try:
                     # DB already exists
                     dbJSON: jsonDB = json.load(db)
@@ -127,8 +128,8 @@ class DatabaseManager:
             else:
                 raise TypeError(
                     "While encoding email and/or password, it returned a None value.")
-    
-    #Instance method - Help construct user's grades data
+
+    # Instance method - Help construct user's grades data
     def _newUserGradesEntry(self, periods: List[Period]) -> List[Dict[str, Any]]:
         periodGrades: List[Dict[str, Any]] = []
         for period in periods:
@@ -137,15 +138,14 @@ class DatabaseManager:
             periodGrades.append(dictFormat)
         return periodGrades
 
-    # Instance method
-    def getUserEntry(self, email: str) -> Optional[User]:
+    def getUserEntry(self, email: str) -> Optional[Dict[str, Any]]:
         if email == '':
             return None
         # Open DB in read mode
         with open(self.databaseName, "r") as db:
-            # Load JSON
-            dbJSON = json.load(db)
             try:
+                # Load JSON
+                dbJSON = json.load(db)
                 # Filter for matching email
                 matchingUser = filter(lambda u: self._decodeCipher(
                     u['email']) == email, dbJSON)
@@ -157,21 +157,81 @@ class DatabaseManager:
                     decryptedPassword = self._decodeCipher(
                         firstMatch['password'])
                     if decryptedPassword is not None and decryptedEmail is not None:
-                        # Construct user
-                        targetUser = User(email=decryptedEmail,
-                                          password=decryptedPassword,
-                                          grades=firstMatch['grades'])
+                        # Reassign email and password with decoded data
+                        firstMatch['email'] = decryptedEmail
+                        firstMatch['password'] = decryptedPassword
                         # return user
-                        return targetUser
+                        return firstMatch
                     else:
                         raise TypeError(
                             "While decoding email and/or password, it returned a None value.")
                 else:
                     return None
+            except JSONDecodeError as err:
+                print(err)
             except InvalidToken as err:
                 print(err)
 
+    def getUserGrades(self, email: str) -> Optional[List[Dict[str, Any]]]:
+        try:
+            entry = self.getUserEntry(email)
+            if entry is not None:
+                # Construct user object
+                return entry['grades']
+            else:
+                return None
+        except (TypeError, InvalidToken) as err:
+            print(err)
+            return None
+
+    # Instance method
+    def getUserEntryObject(self, email: str) -> Optional[Student]:
+        try:
+            entry = self.getUserEntry(email)
+            if entry is not None:
+                # Construct user object
+                return Student(email=entry['email'],
+                               password=entry['password'],
+                               grades=Period.convertToPeriods(entry['grades']))
+            else:
+                return None
+        except (TypeError, InvalidToken) as err:
+            print(err)
+            return None
+
+    def getAllUserEntryObjects(self) -> Optional[List[Student]]:
+        # Initialize empty list for all entries
+        allStudents: List[Student] = []
+        with open(self.databaseName, "r") as db:
+            try:
+                # Load JSON
+                dbJSON: jsonDB = json.load(db)
+                for student in dbJSON:
+                    # Decrypt information
+                    decryptedEmail = self._decodeCipher(student['email'])
+                    decryptedPassword = self._decodeCipher(student['password'])
+                    if decryptedPassword is not None and decryptedEmail is not None:
+                        # Reassign email and password with decoded data
+                        student['email'] = decryptedEmail
+                        student['password'] = decryptedPassword
+
+                        #Construct new Student object from our information
+                        studentEntry = Student(decryptedEmail,
+                                               decryptedPassword,
+                                               student['grades'],
+                                               lastUpdated=student['lastUpdated'])
+
+                        allStudents.append(studentEntry)
+                    else:
+                        raise TypeError(
+                            "While decoding email and/or password, it returned a None value.")
+            except JSONDecodeError as err:
+                print("getAllUserEntryObjects", err)
+            except InvalidToken as err:
+                print(err)
+        return allStudents
 # ---------------- Encoding and Decoding Data ----------------
+
     def _encodeCipher(self, data: str) -> Optional[str]:
         try:
             encrypted = self.cipherSuite.encrypt(str.encode(data))
@@ -194,23 +254,25 @@ if __name__ == "__main__":
     databaseManager2 = DatabaseManager()
     try:
         testPeriod1 = Period(periodNum=1,
-                            periodName="English",
-                            teacherName="Donald",
-                            gradePercent=98.3,
-                            currentMark="A",
-                            isPrior=False)
+                             periodName="English",
+                             teacherName="Donald",
+                             gradePercent=98.3,
+                             currentMark="A",
+                             isPrior=False)
         testPeriod2 = Period(periodNum=2,
-                            periodName="Algebra 1",
-                            teacherName="Biden",
-                            gradePercent=93.5,
-                            currentMark="A-",
-                            isPrior=False)
-        newUser = User(email="fdsf@smhst.org", password="%", grades=[testPeriod1, testPeriod2])
-        newUser2 = User(email="s", password="1", grades=[testPeriod2, testPeriod1])
+                             periodName="Algebra 1",
+                             teacherName="Biden",
+                             gradePercent=93.5,
+                             currentMark="A-",
+                             isPrior=False)
+        newUser = Student(email="fdsf@smhst.org", password="%",
+                          grades=[testPeriod1, testPeriod2])
+        newUser2 = Student(email="s", password="1", grades=[
+            testPeriod2, testPeriod1])
         databaseManager1.newUserEntry(user=newUser)
         databaseManager2.newUserEntry(user=newUser2)
         print(databaseManager1.getUserEntry(email="s"))
         print(databaseManager2.getUserEntry(email="s"))
-
+        print(databaseManager1.getAllUserEntryObjects())
     except Exception as e:
         print(e)
