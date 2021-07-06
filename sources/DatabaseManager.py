@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from cryptography.fernet import Fernet, InvalidToken
 import json
 from json import JSONDecodeError
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, NewType
 import os
 
 debug = True
@@ -71,7 +71,7 @@ class DatabaseManager:
                 newUser = {'email': cipherEmail, 'password': cipherPassword}
                 try:
                     #DB already exists
-                    dbJSON: List[dict[str, str]] = json.load(db)
+                    dbJSON: List[Dict[str, str]] = json.load(db)
 
                     #Append new user if its email does not already exist
                     if not self.containsDuplicates(dbJSON, email=user.email):
@@ -84,7 +84,7 @@ class DatabaseManager:
                 except JSONDecodeError as e:
                     print(f"Error decoding JSON: {e}")
                     #DB does not exist, create new
-                    dbJSON: List[dict[str, str]] = [newUser]
+                    dbJSON: List[Dict[str, str]] = [newUser]
                     json.dump(dbJSON, db)
             else:
                 raise TypeError("While encoding email and/or password, it returned a None value.")
@@ -105,9 +105,10 @@ class DatabaseManager:
             try:
                 #Filter for matching email
                 matchingUser = filter(lambda u: self.decodeCipher(u['email']) == email, dbJSON)
-                #Decrypt information
-                firstMatch: Optional[dict] = next(matchingUser)
+                firstMatch: Optional[Dict] = next(matchingUser)
+
                 if firstMatch is not None:
+                    #Decrypt information
                     decryptedEmail = self.decodeCipher(firstMatch['email'])
                     decryptedPassword = self.decodeCipher(firstMatch['password'])
                     if decryptedPassword is not None and decryptedEmail is not None:
@@ -122,6 +123,38 @@ class DatabaseManager:
             except InvalidToken as err:
                 print(err)
 
+    Successful = bool
+    def deleteUserEntry(self, email: str) -> Successful:
+        if email == '':
+            return False
+        #Open DB in read mode
+        with open(self.databaseName, "r+") as db:
+            #Load JSON
+            dbJSON: List[Dict] = json.load(db)
+            try:
+                #Get list of indexes of matching email predicate
+                userIndexes = [i for (i, n) in enumerate(dbJSON) if self.decodeCipher(n['email']) == email]
+
+                #We only expect 1 item in list, get 1st index
+                if userIndexes:
+                    userIndex = userIndexes[0]
+                else:
+                    return False
+                #Remove User at that index
+                dbJSON.pop(userIndex)
+                db.truncate(0) #Wipe file content
+                db.seek(0) #Move file pointer to beginning
+                json.dump(dbJSON, db)
+                return True
+            #Handle error where crypto token invalid
+            except InvalidToken as err:
+                print(err)
+            
+            #Handle error where index cannot be found in list
+            except ValueError as err:
+                print(err)
+                return False
+
 if __name__ == "__main__":   
     databaseManager = DatabaseManager()
     try:
@@ -130,5 +163,7 @@ if __name__ == "__main__":
         databaseManager.newUserEntry(user=newUser)
         databaseManager.newUserEntry(user=newUser2)
         print(databaseManager.getUserEntry(email=""))
+        print(databaseManager.deleteUserEntry("s"))
+
     except Exception as e:
         print(e)
