@@ -1,7 +1,7 @@
 from flask import Flask, request, redirect, url_for
 from sources.AeriesScraper import Request, DataParser, Period, PeriodEncoder, ValidationError
-from sources.Database.DatabaseManager import DatabaseManager
-from sources.Database.User import User
+from sources.DatabaseManager import DatabaseManager
+from sources.User import User
 from typing import List, Optional
 from cryptography.fernet import InvalidToken
 
@@ -33,20 +33,6 @@ def API():
         # Check email and password not empty
         if email and password:
             try:
-                manager = DatabaseManager()
-                manager.newUserEntry(user=User(email=email, password=password))
-                print(manager.getUserEntry(email=email))
-            except ValueError as err:
-                errorMessage: str = f"Internal: {err}"
-                print(errorMessage)
-            except TypeError as err:
-                errorMessage: str = f"Internal: {err}"
-                print(errorMessage)
-            except InvalidToken as err:
-                errorMessage: str = f"Internal: {err}"
-                print(errorMessage)
-
-            try:
                 # Initialize networking request
                 requestData: Request = Request(password, email)
                 # Login to Aeries
@@ -55,13 +41,26 @@ def API():
                 if rawJson is not None:
                     dataParser: DataParser = DataParser(rawJson)
                     parsedPeriods: List[Period] = dataParser.parseData()
+                    try:
+                        manager = DatabaseManager()
+                        manager.newUserEntry(user=User(email=email, password=password, grades=parsedPeriods))
+                    except ValueError as err:
+                        errorMessage: str = f"Internal: {err}"
+                        print(errorMessage)
+                    except TypeError as err:
+                        errorMessage: str = f"Internal: {err}"
+                        print(errorMessage)
+                    except InvalidToken as err:
+                        errorMessage: str = f"Internal: {err}"
+                        print(errorMessage)
                     encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
                     return encodedPeriods
+                    
                 else:
                     errorMessage: str = """Internal: Server encountered error when
                      fetching summary after login. Please file a bug report."""
                     return errorMessage, 500
-                    
+
             except ValidationError as err:
                 return str(err), 401
         else:

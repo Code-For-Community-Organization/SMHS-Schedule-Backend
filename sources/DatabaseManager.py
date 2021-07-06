@@ -3,12 +3,12 @@ from typing import Optional, Dict, List, Any
 import os
 import json
 from json import JSONDecodeError
-from ..AeriesScraper import Period, PeriodEncoder
-
-if __name__ == "__main":
+if __name__ == "__main__":
+    from AeriesScraper import Period, PeriodEncoder
     from User import User
 else:
     from .User import User
+    from .AeriesScraper import Period, PeriodEncoder
 
 debug = True
 if 'ON_HEROKU' in os.environ:
@@ -136,7 +136,7 @@ class DatabaseManager:
             dictFormat = json.loads(jsonFormat)
             periodGrades.append(dictFormat)
         return periodGrades
-        
+
     # Instance method
     def getUserEntry(self, email: str) -> Optional[User]:
         if email == '':
@@ -193,8 +193,20 @@ if __name__ == "__main__":
     databaseManager1 = DatabaseManager()
     databaseManager2 = DatabaseManager()
     try:
-        newUser = User(email="fdsf@smhst.org", password="%")
-        newUser2 = User(email="s", password="1")
+        testPeriod1 = Period(periodNum=1,
+                            periodName="English",
+                            teacherName="Donald",
+                            gradePercent=98.3,
+                            currentMark="A",
+                            isPrior=False)
+        testPeriod2 = Period(periodNum=2,
+                            periodName="Algebra 1",
+                            teacherName="Biden",
+                            gradePercent=93.5,
+                            currentMark="A-",
+                            isPrior=False)
+        newUser = User(email="fdsf@smhst.org", password="%", grades=[testPeriod1, testPeriod2])
+        newUser2 = User(email="s", password="1", grades=[testPeriod2, testPeriod1])
         databaseManager1.newUserEntry(user=newUser)
         databaseManager2.newUserEntry(user=newUser2)
         print(databaseManager1.getUserEntry(email="s"))

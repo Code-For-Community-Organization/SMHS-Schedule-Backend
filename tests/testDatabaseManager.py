@@ -1,6 +1,6 @@
 import unittest
-from sources.Database.DatabaseManager import DatabaseManager
-from sources.AeriesScraper import PeriodEncoder, Period
+from sources.DatabaseManager import DatabaseManager
+from sources.AeriesScraper import Period
 
 
 class TestDatabaseManager(unittest.TestCase):

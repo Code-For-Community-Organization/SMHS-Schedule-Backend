@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from ..AeriesScraper import Period
+from .AeriesScraper import Period
 from typing import List
 @dataclass
 class User:
