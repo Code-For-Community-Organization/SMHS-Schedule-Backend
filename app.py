@@ -50,18 +50,12 @@ def API():
                     parsedPeriods: List[Period] = Period.convertToPeriods(rawJson)
                     try:
                         manager.newUserEntry(user=User(email=email, password=password, grades=parsedPeriods))
-                    except ValueError as err:
+                    except (ValueError, TypeError, InvalidToken) as err:
                         errorMessage: str = f"Internal: {err}"
                         print(errorMessage)
-                    except TypeError as err:
-                        errorMessage: str = f"Internal: {err}"
-                        print(errorMessage)
-                    except InvalidToken as err:
-                        errorMessage: str = f"Internal: {err}"
-                        print(errorMessage)
+                        return errorMessage, 500
                     encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
                     return encodedPeriods
-                    
                 else:
                     errorMessage: str = """Internal: Server encountered error when
                      fetching summary after login. Please file a bug report."""
