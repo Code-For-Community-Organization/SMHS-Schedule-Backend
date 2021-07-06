@@ -3,15 +3,18 @@ from typing import Optional, Dict, List
 import os
 import json
 from json import JSONDecodeError
+
 if __name__ == "__main":
     from User import User
 else:
     from .User import User
-    
+
 debug = True
 if 'ON_HEROKU' in os.environ:
     debug = False
 
+#typealias
+jsonDB = List[Dict[str, str]]
 
 class DatabaseManager:
     def __init__(self):
@@ -20,8 +23,9 @@ class DatabaseManager:
             key = b'udmMAqGywVOeu1JXjAt3jc2UsjgoVhoGXBPXbR1ALYE='
         else:
             self.databaseName = 'production-database.json'
-            if os.environ.get('CRYPTO_KEY') is not None:
-                key = str.encode()
+            serverKey: Optional[str] = os.environ.get('CRYPTO_KEY')
+            if serverKey is not None:
+                key: bytes = str.encode(serverKey)
             else:
                 raise NameError(
                     "Environment variable for crypto key is not found on server.")
@@ -29,9 +33,8 @@ class DatabaseManager:
         self.cipherSuite = Fernet(key)
 
     # ---------------- Helper Methods ----------------
-    def _containsDuplicates(self, dbJSON, email: str) -> bool:
+    def _containsDuplicates(self, dbJSON: jsonDB, email: str) -> bool:
         doesContain = False
-
         for user in dbJSON:
             try:
                 decodedEmail = self._decodeCipher(user['email'])
@@ -61,7 +64,7 @@ class DatabaseManager:
         # Open DB in read mode
         with open(self.databaseName, "r+") as db:
             # Load JSON
-            dbJSON: List[Dict] = json.load(db)
+            dbJSON: jsonDB = json.load(db)
             try:
                 # Get list of indexes of matching email predicate
                 userIndexes = [i for (i, n) in enumerate(
@@ -85,7 +88,7 @@ class DatabaseManager:
             # Handle error where index cannot be found in list
             except ValueError as err:
                 print(err)
-                return False
+            return False
 
     # Instance method
     def newUserEntry(self, user: User):
@@ -99,7 +102,7 @@ class DatabaseManager:
                 newUser = {'email': cipherEmail, 'password': cipherPassword}
                 try:
                     # DB already exists
-                    dbJSON: List[Dict[str, str]] = json.load(db)
+                    dbJSON: jsonDB = json.load(db)
 
                     # Append new user if its email does not already exist
                     if not self._containsDuplicates(dbJSON, email=user.email):
@@ -112,7 +115,7 @@ class DatabaseManager:
                 except JSONDecodeError as e:
                     print(f"Error decoding JSON: {e}")
                     # DB does not exist, create new
-                    dbJSON: List[Dict[str, str]] = [newUser]
+                    dbJSON: jsonDB = [newUser]
                     json.dump(dbJSON, db)
             else:
                 raise TypeError(
@@ -131,7 +134,7 @@ class DatabaseManager:
                 # Filter for matching email
                 matchingUser = filter(lambda u: self._decodeCipher(
                     u['email']) == email, dbJSON)
-                firstMatch: Optional[Dict] = next(matchingUser)
+                firstMatch: Optional[Dict[str, str]] = next(matchingUser)
 
                 if firstMatch is not None:
                     # Decrypt information

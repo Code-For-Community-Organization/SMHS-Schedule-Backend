@@ -1,9 +1,8 @@
 from json.encoder import JSONEncoder
+import json
 from dataclasses import dataclass
 import requests
-import json
-from typing import List
-import time
+from typing import Dict, Optional, List, Any
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
@@ -35,7 +34,6 @@ class Request:
         self.loginURL: str = 'https://aeries.smhs.org/Parent/LoginParent.aspx'
         self.password: str = password
         self.username: str = username
-        self.session: requests.sessions.Session = None
 
     def login(self):
         #Login information to be sent as payload
@@ -53,7 +51,7 @@ class Request:
         #Configure the session retry with matching http pattern, using http adaptor
         self.session.mount("http://", HTTPAdapter(max_retries=retries))
         try:
-            post = self.session.post(self.loginURL, data=payload)
+            self.session.post(self.loginURL, data=payload)
         except requests.exceptions.RequestException as err:
             # catastrophic error. bail.
             raise SystemExit(err)
@@ -61,7 +59,7 @@ class Request:
             # Some 4xx http error. bail.
             raise SystemExit(err)
 
-    def fetchSummary(self) -> str:
+    def fetchSummary(self) -> Optional[str]:
         #JSON grades URL to fetch
         contentURL: str = 'https://aeries.smhs.org/Parent/Widgets/ClassSummary/GetClassSummary?IsProfile=True'
 
@@ -85,27 +83,33 @@ class Request:
             #Handle invalid JSON error
             except ValueError as err:
                 raise ValidationError(err)
+        return None
 
 class DataParser:
     
-    def __init__(self, rawJSON) -> None:
+    def __init__(self, rawJSON: str) -> None:
         self.rawJSON = rawJSON
 
     def parseData(self) -> List[Period]:
-        allClasses: List[Period] = []
-        for period in json.loads(self.rawJSON):
+        allClasses: List[Period] = [json.loads(self.rawJSON,
+                                               object_hook=DataParser.periodDecoder)]
+        return allClasses
+
+    @staticmethod
+    def periodDecoder(period: Dict[str, Any]):
+        if "__type__" in period and period["__type"] == "Period":
             semesterTime: bool = period['TermGrouping'] == 'Prior Terms'
-            currentPeriod: Period = Period(periodNum=period["Period"],
+            obj: Period = Period(periodNum=period["Period"],
                                     periodName=period["CourseName"],
                                     teacherName=period["TeacherName"],
                                     gradePercent=period["Percent"],
                                     currentMark=period["CurrentMark"],
                                     isPrior=semesterTime)
-            allClasses.append(currentPeriod)
-        return allClasses
+            return obj
+
 
     @staticmethod
-    def writeFile(filename, JSONFile):
+    def writeFile(filename: str, JSONFile: Any):
         with open (filename, 'w') as json_file:
             json_file.write(JSONFile)
 
@@ -113,18 +117,16 @@ if __name__ == "__main__":
 
     email: str = input("Enter your email or username: ")
     password: str = input("Enter your password: ")
-    startTime = time.time()
-
     try:
         requestData: Request = Request(password,
                                 email)
         requestData.login()
         rawJson = requestData.fetchSummary()
-        dataParser: DataParser = DataParser(rawJson)
-        parsedPeriods: List[Period] = dataParser.parseData()
-        encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
-        DataParser.writeFile('class-summary.json', JSONFile=encodedPeriods)
+        if rawJson is not None:
+            dataParser: DataParser = DataParser(rawJson)
+            parsedPeriods: List[Period] = dataParser.parseData()
+            encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
+            DataParser.writeFile('class-summary.json', JSONFile=encodedPeriods)
     except Exception as e:
         print(e)
     
-    print(f"----- {time.time() - startTime} seconds elapsed -----")
