@@ -4,7 +4,9 @@ from sources.DatabaseManager import DatabaseManager
 from sources.Student import Student
 from typing import List, Optional, Dict, Any
 from cryptography.fernet import InvalidToken
+from sources.AsyncNetwork import scheduleAsyncFetch
 import json
+import asyncio
 
 def wrapTojsonHTML(content: str, appendBraces: bool = True) -> str:
   return f"<pre>{{ {content} }}</pre>" if appendBraces else f"<pre>{content}</pre>"
@@ -49,13 +51,21 @@ def API():
                 if rawJson is not None:
                     parsedPeriods: List[Period] = Period.convertToPeriods(rawJson)
                     try:
-                        manager.newUserEntry(user=Student(email=email, password=password, grades=parsedPeriods))
+                        manager.newUserEntry(user=Student(email=email, password=password, grades=parsedPeriods))           
+                        #Schedule periodic grades networking fetch
+                        allStudents = manager.getAllUserEntryObjects()
+                        print("All students:", allStudents)
+                        if allStudents is not None:
+                            #Fitler for outdated students logic is
+                            #in scheduleAsyncFetch, so here we pass in all the students
+                            asyncio.run(scheduleAsyncFetch(students=allStudents))
+                        encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
+
+                        return encodedPeriods
                     except (ValueError, TypeError, InvalidToken) as err:
                         errorMessage: str = f"Internal: {err}"
                         print(errorMessage)
                         return errorMessage, 500
-                    encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
-                    return encodedPeriods
                 else:
                     errorMessage: str = """Internal: Server encountered error when
                      fetching summary after login. Please file a bug report."""
