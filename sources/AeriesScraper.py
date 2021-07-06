@@ -1,3 +1,4 @@
+from __future__ import annotations
 from json.encoder import JSONEncoder
 import json
 from dataclasses import dataclass
@@ -14,6 +15,20 @@ class Period():
     gradePercent: float
     currentMark: str
     isPrior: bool
+
+    @staticmethod
+    def convertToPeriods(data: str) -> List[Period]:
+        allClasses: List[Period] = []
+        for period in json.loads(data):
+            semesterTime: bool = period['TermGrouping'] == 'Prior Terms'
+            currentPeriod: Period = Period(periodNum=period["Period"],
+                                    periodName=period["CourseName"],
+                                    teacherName=period["TeacherName"],
+                                    gradePercent=period["Percent"],
+                                    currentMark=period["CurrentMark"],
+                                    isPrior=semesterTime)
+            allClasses.append(currentPeriod)
+        return allClasses
 
 class PeriodEncoder(JSONEncoder):
     def default(self, o):
@@ -90,18 +105,7 @@ class DataParser:
     def __init__(self, rawJSON: str) -> None:
         self.rawJSON = rawJSON
 
-    def parseData(self) -> List[Period]:
-        allClasses: List[Period] = []
-        for period in json.loads(self.rawJSON):
-            semesterTime: bool = period['TermGrouping'] == 'Prior Terms'
-            currentPeriod: Period = Period(periodNum=period["Period"],
-                                    periodName=period["CourseName"],
-                                    teacherName=period["TeacherName"],
-                                    gradePercent=period["Percent"],
-                                    currentMark=period["CurrentMark"],
-                                    isPrior=semesterTime)
-            allClasses.append(currentPeriod)
-        return allClasses
+    
 
     @staticmethod
     def writeFile(filename: str, JSONFile: Any):
@@ -118,8 +122,7 @@ if __name__ == "__main__":
         requestData.login()
         rawJson = requestData.fetchSummary()
         if rawJson is not None:
-            dataParser: DataParser = DataParser(rawJson)
-            parsedPeriods: List[Period] = dataParser.parseData()
+            parsedPeriods: List[Period] = Period.convertToPeriods(rawJson)
             encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
             DataParser.writeFile('class-summary.json', JSONFile=encodedPeriods)
     except Exception as e:

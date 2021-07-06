@@ -2,9 +2,9 @@ from flask import Flask, request, redirect, url_for
 from sources.AeriesScraper import Request, DataParser, Period, PeriodEncoder, ValidationError
 from sources.DatabaseManager import DatabaseManager
 from sources.User import User
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from cryptography.fernet import InvalidToken
-
+import json
 
 def wrapTojsonHTML(content: str, appendBraces: bool = True) -> str:
   return f"<pre>{{ {content} }}</pre>" if appendBraces else f"<pre>{content}</pre>"
@@ -31,6 +31,15 @@ def API():
 
         # Check email and password not empty
         if email and password:
+            manager = DatabaseManager()
+
+            #Try fetch user's data from database
+            userData = manager.getUserGrades(email=email)
+
+            #Check if user's data already exist in database
+            if userData is not None:
+                encodedPeriods = json.dumps(userData)
+                return encodedPeriods
             try:
                 # Initialize networking request
                 requestData: Request = Request(password, email)
@@ -38,10 +47,8 @@ def API():
                 requestData.login()
                 rawJson: Optional[str] = requestData.fetchSummary()
                 if rawJson is not None:
-                    dataParser: DataParser = DataParser(rawJson)
-                    parsedPeriods: List[Period] = dataParser.parseData()
+                    parsedPeriods: List[Period] = Period.convertToPeriods(rawJson)
                     try:
-                        manager = DatabaseManager()
                         manager.newUserEntry(user=User(email=email, password=password, grades=parsedPeriods))
                     except ValueError as err:
                         errorMessage: str = f"Internal: {err}"
