@@ -19,6 +19,7 @@ class Period():
 class PeriodEncoder(JSONEncoder):
     def default(self, o):
         return o.__dict__
+
 class FailedAttemptsError(Exception):
     pass
 
@@ -27,20 +28,6 @@ class ValidationError(Exception):
 
 class EmptyPasswordError(Exception):
     pass
-
-#https://stackoverflow.com/questions/16462177/selenium-expected-conditions-possible-to-use-or
-class AnyEc:
-    """ Use with WebDriverWait to combine expected_conditions
-        in an OR.
-    """
-    def __init__(self, *args):
-        self.ecs = args
-    def __call__(self, driver):
-        for fn in self.ecs:
-            try:
-                if fn(driver): return True
-            except:
-                pass
 
 class Request:
     def __init__(self, password: str, username: str):
