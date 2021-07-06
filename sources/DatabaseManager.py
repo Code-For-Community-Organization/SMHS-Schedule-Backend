@@ -106,7 +106,8 @@ class DatabaseManager:
             if cipherEmail is not None and cipherPassword is not None:
                 newUser = {'email': cipherEmail,
                            'password': cipherPassword,
-                           'grades': self._newUserGradesEntry(periods=user.grades)}
+                           'grades': self._newUserGradesEntry(periods=user.grades),
+                           'lastUpdated': user.lastUpdated}
                 try:
                     # DB already exists
                     dbJSON: jsonDB = json.load(db)
