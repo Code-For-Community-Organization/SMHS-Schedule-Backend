@@ -1,8 +1,9 @@
 from cryptography.fernet import Fernet, InvalidToken
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 import os
 import json
 from json import JSONDecodeError
+from ..AeriesScraper import Period, PeriodEncoder
 
 if __name__ == "__main":
     from User import User
@@ -13,8 +14,12 @@ debug = True
 if 'ON_HEROKU' in os.environ:
     debug = False
 
-#typealias
-jsonDB = List[Dict[str, str]]
+# typealias
+# Describes an array of dictionary, each containing
+# a key of type string, and a value of either type
+# string, or a dictionary with key and value of type string
+jsonDB = List[Dict[str, Any]]
+
 
 class DatabaseManager:
     def __init__(self):
@@ -90,7 +95,7 @@ class DatabaseManager:
                 print(err)
             return False
 
-    # Instance method
+    # Instance method - Create new user
     def newUserEntry(self, user: User):
         if not self._isValid(user):
             raise ValueError("Empty username or password is not allowed.")
@@ -99,7 +104,9 @@ class DatabaseManager:
             cipherEmail = self._encodeCipher(data=user.email)
             cipherPassword = self._encodeCipher(data=user.password)
             if cipherEmail is not None and cipherPassword is not None:
-                newUser = {'email': cipherEmail, 'password': cipherPassword}
+                newUser = {'email': cipherEmail,
+                           'password': cipherPassword,
+                           'grades': self._newUserGradesEntry(periods=user.grades)}
                 try:
                     # DB already exists
                     dbJSON: jsonDB = json.load(db)
@@ -120,9 +127,17 @@ class DatabaseManager:
             else:
                 raise TypeError(
                     "While encoding email and/or password, it returned a None value.")
-
+    
+    #Instance method - Help construct user's grades data
+    def _newUserGradesEntry(self, periods: List[Period]) -> List[Dict[str, Any]]:
+        periodGrades: List[Dict[str, Any]] = []
+        for period in periods:
+            jsonFormat = PeriodEncoder().encode(period)
+            dictFormat = json.loads(jsonFormat)
+            periodGrades.append(dictFormat)
+        return periodGrades
+        
     # Instance method
-
     def getUserEntry(self, email: str) -> Optional[User]:
         if email == '':
             return None
@@ -134,7 +149,7 @@ class DatabaseManager:
                 # Filter for matching email
                 matchingUser = filter(lambda u: self._decodeCipher(
                     u['email']) == email, dbJSON)
-                firstMatch: Optional[Dict[str, str]] = next(matchingUser)
+                firstMatch: Optional[Dict[str, Any]] = next(matchingUser)
 
                 if firstMatch is not None:
                     # Decrypt information
@@ -144,7 +159,8 @@ class DatabaseManager:
                     if decryptedPassword is not None and decryptedEmail is not None:
                         # Construct user
                         targetUser = User(email=decryptedEmail,
-                                          password=decryptedPassword)
+                                          password=decryptedPassword,
+                                          grades=firstMatch['grades'])
                         # return user
                         return targetUser
                     else:
