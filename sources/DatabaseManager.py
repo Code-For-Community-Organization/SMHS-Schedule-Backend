@@ -142,7 +142,8 @@ class DatabaseManager:
         if email == '':
             return None
         # Open DB in read mode
-        with open(self.databaseName, "r") as db:
+        with open(self.databaseName, "a+") as db:
+            db.seek(0)
             try:
                 # Load JSON
                 dbJSON = json.load(db)
@@ -202,7 +203,8 @@ class DatabaseManager:
     def getAllUserEntryObjects(self) -> Optional[List[Student]]:
         # Initialize empty list for all entries
         allStudents: List[Student] = []
-        with open(self.databaseName, "r") as db:
+        with open(self.databaseName, "a+") as db:
+            db.seek(0)
             try:
                 # Load JSON
                 dbJSON: jsonDB = json.load(db)

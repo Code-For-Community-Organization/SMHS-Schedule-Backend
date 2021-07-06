@@ -25,7 +25,7 @@ def getOutdatedStudents(students: List[Student], secondsThreshold: int):
     outdatedStudents = filter(lambda a: currentTime - a.lastUpdated >  secondsThreshold, students)
     return outdatedStudents
 
-async def scheduleAsyncFetch(students: List[Student]):
+async def scheduleTask(students: List[Student]):
     while True:
         loginURL = 'https://aeries.smhs.org/Parent/LoginParent.aspx'
         summaryURL = 'https://aeries.smhs.org/Parent/Widgets/ClassSummary/GetClassSummary?IsProfile=True'
@@ -39,3 +39,6 @@ async def scheduleAsyncFetch(students: List[Student]):
                                             email=s.email,
                                             password=s.password) for s in outdatedStudents])
         await asyncio.sleep(1)
+
+async def scheduleAsyncFetch(students: List[Student]):
+    asyncio.create_task(scheduleTask(students))
