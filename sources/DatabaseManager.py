@@ -172,6 +172,8 @@ class DatabaseManager:
                 print(err)
             except InvalidToken as err:
                 print(err)
+            except StopIteration as err:
+                print(err)
 
     def getUserGrades(self, email: str) -> Optional[List[Dict[str, Any]]]:
         try:

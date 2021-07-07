@@ -41,4 +41,17 @@ async def scheduleTask(students: List[Student]):
         await asyncio.sleep(1)
 
 async def scheduleAsyncFetch(students: List[Student]):
-    asyncio.create_task(scheduleTask(students))
+    while True:
+        loginURL = 'https://aeries.smhs.org/Parent/LoginParent.aspx'
+        summaryURL = 'https://aeries.smhs.org/Parent/Widgets/ClassSummary/GetClassSummary?IsProfile=True'
+
+        minute = 60 #60 seconds in a minute
+        hour = minute * 60 #60 minutes in a hour
+        outdatedStudents = getOutdatedStudents(students, secondsThreshold=hour)
+        print(f"Outdated students: {outdatedStudents}")
+        await asyncio.gather(*[asyncNetworkGet(loginURL,
+                                            summaryURL,
+                                            email=s.email,
+                                            password=s.password) for s in outdatedStudents])
+        await asyncio.sleep(1)
+    

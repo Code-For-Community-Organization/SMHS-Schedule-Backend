@@ -53,12 +53,14 @@ def API():
                     try:
                         manager.newUserEntry(user=Student(email=email, password=password, grades=parsedPeriods))           
                         #Schedule periodic grades networking fetch
-                        allStudents = manager.getAllUserEntryObjects()
-                        print("All students:", allStudents)
-                        if allStudents is not None:
-                            #Fitler for outdated students logic is
-                            #in scheduleAsyncFetch, so here we pass in all the students
-                            asyncio.run(scheduleAsyncFetch(students=allStudents))
+                        #allStudents = manager.getAllUserEntryObjects()
+                        #print("All students:", allStudents)
+                        # if allStudents is not None:
+                        #     #Fitler for outdated students logic is
+                        #     #in scheduleAsyncFetch, so here we pass in all the students
+                        #     loop = asyncio.new_event_loop()
+                        #     loop.create_task(scheduleAsyncFetch(students=allStudents))
+                        #     loop.run_forever()
                         encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
 
                         return encodedPeriods
