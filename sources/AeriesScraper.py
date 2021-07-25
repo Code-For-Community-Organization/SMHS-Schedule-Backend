@@ -1,9 +1,9 @@
+from __future__ import annotations
 from json.encoder import JSONEncoder
+import json
 from dataclasses import dataclass
 import requests
-import json
-from typing import List
-import time
+from typing import Dict, Optional, List, Any
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
@@ -16,9 +16,24 @@ class Period():
     currentMark: str
     isPrior: bool
 
+    @staticmethod
+    def convertToPeriods(data: str) -> List[Period]:
+        allClasses: List[Period] = []
+        for period in json.loads(data):
+            semesterTime: bool = period['TermGrouping'] == 'Prior Terms'
+            currentPeriod: Period = Period(periodNum=period["Period"],
+                                    periodName=period["CourseName"],
+                                    teacherName=period["TeacherName"],
+                                    gradePercent=period["Percent"],
+                                    currentMark=period["CurrentMark"],
+                                    isPrior=semesterTime)
+            allClasses.append(currentPeriod)
+        return allClasses
+
 class PeriodEncoder(JSONEncoder):
     def default(self, o):
         return o.__dict__
+
 class FailedAttemptsError(Exception):
     pass
 
@@ -28,27 +43,12 @@ class ValidationError(Exception):
 class EmptyPasswordError(Exception):
     pass
 
-#https://stackoverflow.com/questions/16462177/selenium-expected-conditions-possible-to-use-or
-class AnyEc:
-    """ Use with WebDriverWait to combine expected_conditions
-        in an OR.
-    """
-    def __init__(self, *args):
-        self.ecs = args
-    def __call__(self, driver):
-        for fn in self.ecs:
-            try:
-                if fn(driver): return True
-            except:
-                pass
-
 class Request:
     def __init__(self, password: str, username: str):
         #URL the login form points to, we POST this URL
         self.loginURL: str = 'https://aeries.smhs.org/Parent/LoginParent.aspx'
         self.password: str = password
         self.username: str = username
-        self.session: requests.sessions.Session = None
 
     def login(self):
         #Login information to be sent as payload
@@ -66,7 +66,7 @@ class Request:
         #Configure the session retry with matching http pattern, using http adaptor
         self.session.mount("http://", HTTPAdapter(max_retries=retries))
         try:
-            post = self.session.post(self.loginURL, data=payload)
+            self.session.post(self.loginURL, data=payload)
         except requests.exceptions.RequestException as err:
             # catastrophic error. bail.
             raise SystemExit(err)
@@ -74,7 +74,7 @@ class Request:
             # Some 4xx http error. bail.
             raise SystemExit(err)
 
-    def fetchSummary(self) -> str:
+    def fetchSummary(self) -> Optional[str]:
         #JSON grades URL to fetch
         contentURL: str = 'https://aeries.smhs.org/Parent/Widgets/ClassSummary/GetClassSummary?IsProfile=True'
 
@@ -98,27 +98,17 @@ class Request:
             #Handle invalid JSON error
             except ValueError as err:
                 raise ValidationError(err)
+        return None
 
 class DataParser:
     
-    def __init__(self, rawJSON) -> None:
+    def __init__(self, rawJSON: str) -> None:
         self.rawJSON = rawJSON
 
-    def parseData(self) -> List[Period]:
-        allClasses: List[Period] = []
-        for period in json.loads(self.rawJSON):
-            semesterTime: bool = period['TermGrouping'] == 'Prior Terms'
-            currentPeriod: Period = Period(periodNum=period["Period"],
-                                    periodName=period["CourseName"],
-                                    teacherName=period["TeacherName"],
-                                    gradePercent=period["Percent"],
-                                    currentMark=period["CurrentMark"],
-                                    isPrior=semesterTime)
-            allClasses.append(currentPeriod)
-        return allClasses
+    
 
     @staticmethod
-    def writeFile(filename, JSONFile):
+    def writeFile(filename: str, JSONFile: Any):
         with open (filename, 'w') as json_file:
             json_file.write(JSONFile)
 
@@ -126,18 +116,15 @@ if __name__ == "__main__":
 
     email: str = input("Enter your email or username: ")
     password: str = input("Enter your password: ")
-    startTime = time.time()
-
     try:
         requestData: Request = Request(password,
                                 email)
         requestData.login()
         rawJson = requestData.fetchSummary()
-        dataParser: DataParser = DataParser(rawJson)
-        parsedPeriods: List[Period] = dataParser.parseData()
-        encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
-        DataParser.writeFile('class-summary.json', JSONFile=encodedPeriods)
+        if rawJson is not None:
+            parsedPeriods: List[Period] = Period.convertToPeriods(rawJson)
+            encodedPeriods: str = PeriodEncoder().encode(parsedPeriods)
+            DataParser.writeFile('class-summary.json', JSONFile=encodedPeriods)
     except Exception as e:
         print(e)
     
-    print(f"----- {time.time() - startTime} seconds elapsed -----")
