@@ -50,7 +50,8 @@ class DatabaseManager:
                     raise TypeError(
                         "While decoding a email in database, it returned a None value.")
             except InvalidToken as err:
-                print(err)
+                if debug:
+                    print(err)
         return doesContain
 
     def _isValid(self, user: Student) -> bool:
@@ -88,11 +89,13 @@ class DatabaseManager:
                 return True
             # Handle error where crypto token invalid
             except InvalidToken as err:
-                print(err)
+                if debug:
+                    print(err)
 
             # Handle error where index cannot be found in list
             except ValueError as err:
-                print(err)
+                if debug:
+                    print(err)
             return False
 
     # Instance method - Create new user
@@ -121,7 +124,8 @@ class DatabaseManager:
                     json.dump(dbJSON, db)
 
                 except JSONDecodeError as e:
-                    print(f"Error decoding JSON: {e}")
+                    if debug:
+                        print(f"Error decoding JSON: {e}")
                     # DB does not exist, create new
                     dbJSON: jsonDB = [newUser]
                     json.dump(dbJSON, db)
@@ -169,11 +173,14 @@ class DatabaseManager:
                 else:
                     return None
             except JSONDecodeError as err:
-                print(err)
+                if debug:
+                    print(err)
             except InvalidToken as err:
-                print(err)
+                if debug:
+                    print(err)
             except StopIteration as err:
-                print(err)
+                if debug:
+                    print(err)
 
     def getUserGrades(self, email: str) -> Optional[List[Dict[str, Any]]]:
         try:
@@ -184,7 +191,8 @@ class DatabaseManager:
             else:
                 return None
         except (TypeError, InvalidToken) as err:
-            print(err)
+            if debug:
+                print(err)
             return None
 
     # Instance method
@@ -199,7 +207,8 @@ class DatabaseManager:
             else:
                 return None
         except (TypeError, InvalidToken) as err:
-            print(err)
+            if debug:
+                print(err)
             return None
 
     def getAllUserEntryObjects(self) -> Optional[List[Student]]:
