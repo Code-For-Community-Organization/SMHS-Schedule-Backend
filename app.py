@@ -108,11 +108,11 @@ def annoucements_API():
     if 'date' in request.args:
         date = request.args.get('date')
         annoucementScraper = AnnoucementScraper()
-        annoucement_result = annoucementScraper.fetchFromDB(date=date)
+        annoucement_result = annoucementScraper.fetchFromDB(date_raw=date)
         if annoucement_result is not None:
             return annoucement_result
         else:
-            return "Error: Annoucement for given date not found", 404
+            return f"Error: Annoucement for given date, {date} not found", 404
     else:
         errorMessage: str = "Error: Date parameter need to be specified."
         return errorMessage, 400

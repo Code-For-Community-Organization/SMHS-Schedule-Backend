@@ -37,8 +37,11 @@ class AnnoucementScraper:
         date = date.replace(hour=0, minute=0, second=0)
         return date.isoformat(timespec="seconds")
 
-    def fetchFromDB(self, date_raw: str) -> Optional[str]:
+    def fetchFromDB(self, date_raw: str) -> Optional[str]: 
         target_date = self._normalizeDate(date_raw)
+        if debug:
+            print(date_raw)
+            print(target_date)
         with open(self.dbName, "r+") as db:
             content = json.load(db)
             return content.get(target_date)
