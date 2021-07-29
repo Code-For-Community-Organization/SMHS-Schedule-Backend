@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 from typing import Dict, Optional
 import requests
@@ -7,6 +8,8 @@ import os
 import collections
 import time
 import concurrent.futures
+from dateutil import parser
+import pytz
 
 debug = True
 if 'ON_HEROKU' in os.environ:
@@ -27,10 +30,18 @@ class AnnoucementScraper:
         with open(self.dbName, "w+") as db:
             json.dump(object, db)
 
-    def fetchFromDB(self, date: str) -> Optional[str]:
+    def _normalizeDate(self, date_raw: str) -> str:
+        date: datetime = parser.parse(date_raw)
+        if date.tzinfo is None:
+            date = pytz.utc.localize(date)
+        date = date.replace(hour=0, minute=0, second=0)
+        return date.isoformat(timespec="seconds")
+
+    def fetchFromDB(self, date_raw: str) -> Optional[str]:
+        target_date = self._normalizeDate(date_raw)
         with open(self.dbName, "r+") as db:
             content = json.load(db)
-            return content.get(date)
+            return content.get(target_date)
 
     def fetchAnnoucements(self):
         while True:
@@ -43,15 +54,15 @@ class AnnoucementScraper:
             all_annoucements: Dict[str, str] = {}
 
             for entry_tag in root.findall(self._getTagName("entry")):
-                date = entry_tag.find(self._getTagName("published")).text
-
+                date_raw = entry_tag.find(self._getTagName("published")).text
+                
                 index_tag = entry_tag.find(self._getTagName("id")).text
                 annoucement_index = index_tag.split("/", 1)[1]
                 response = requests.get(f"https://www.smhs.org/fs/elements/7031?is_popup=true&post_id={annoucement_index}&show_post=true&is_draft=false")
                 html = response.text
                 soup = BeautifulSoup(html, 'html.parser')
                 annoucement_text = soup.findAll("div", {"class":"fsBody"})[0].text
-
+                date = self._normalizeDate(date_raw)
                 all_annoucements[date] = annoucement_text
 
             all_annoucements = sorted(all_annoucements.items())
@@ -62,6 +73,15 @@ class AnnoucementScraper:
 if __name__ == "__main__":
     with concurrent.futures.ThreadPoolExecutor() as executor:
         annoucementScraper = AnnoucementScraper()
-        executor.submit(annoucementScraper.fetchAnnoucements)
+        #executor.submit(annoucementScraper.fetchAnnoucements)
+
+        result1 = annoucementScraper.fetchFromDB(date_raw="2021-05-13T08:35:05+00:00")
+        print(result1)
+
+        result2 = annoucementScraper.fetchFromDB(date_raw="2021-05-14")
+        print(result2)
+        
+        result3 = annoucementScraper.fetchFromDB(date_raw="2021/05/27")
+        print(result3)
     
    
