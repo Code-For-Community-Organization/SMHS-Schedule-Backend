@@ -7,6 +7,7 @@ from typing import List, Optional
 from cryptography.fernet import InvalidToken
 import json
 from multiprocessing import Process
+from datetime import date
 
 def wrapTojsonHTML(content: str, appendBraces: bool = True) -> str:
         preTag: str = '<pre style="word-wrap: break-word; white-space: pre-wrap;">'
@@ -23,11 +24,11 @@ setup_app()
 
 @app.route('/', methods=['GET'])
 def home():
-    return redirect(url_for("API"), 302)
+    return redirect(url_for("grades_API"), 302)
 
 
 @app.route('/api/v1/grades/', methods=['GET', 'POST'])
-def API():
+def grades_API():
     #Check if POST from include email and password
     if 'email' in request.form and 'password' in request.form:
         email: str = request.form['email']
@@ -95,6 +96,26 @@ def API():
         errorMessage: str = "Error: Email and password cannot be empty."
         return errorMessage, 400
 
+def validateDate(dateString: str) -> bool:
+    try:
+        date.fromisoformat(dateString)
+        return True
+    except ValueError:
+        return False
+
+@app.route('/api/v1/annoucements/', methods=['GET'])
+def annoucements_API():
+    if 'date' in request.args:
+        date = request.args.get('date')
+        annoucementScraper = AnnoucementScraper()
+        annoucement_result = annoucementScraper.fetchFromDB(date=date)
+        if annoucement_result is not None:
+            return annoucement_result
+        else:
+            return "Error: Annoucement for given date not found", 404
+    else:
+        errorMessage: str = "Error: Date parameter need to be specified."
+        return errorMessage, 400
 
 if __name__ == "__main__":
     app.run(debug=True)
