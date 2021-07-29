@@ -1,10 +1,12 @@
 from flask import Flask, request, redirect, url_for
-from sources.AeriesScraper import Request, DataParser, Period, PeriodEncoder, ValidationError
+from sources.AeriesScraper import Request, Period, PeriodEncoder, ValidationError
 from sources.DatabaseManager import DatabaseManager, debug
 from sources.Student import Student
+from sources.AnnoucementScraper import AnnoucementScraper
 from typing import List, Optional
 from cryptography.fernet import InvalidToken
 import json
+from multiprocessing import Process
 
 def wrapTojsonHTML(content: str, appendBraces: bool = True) -> str:
         preTag: str = '<pre style="word-wrap: break-word; white-space: pre-wrap;">'
@@ -12,8 +14,12 @@ def wrapTojsonHTML(content: str, appendBraces: bool = True) -> str:
 
 app = Flask(__name__)
 
-app.config['DEBUG'] = True
+def setup_app():
+    annoucementScraper = AnnoucementScraper()
+    process = Process(target=annoucementScraper.fetchAnnoucements)
+    process.start()
 
+setup_app()
 
 @app.route('/', methods=['GET'])
 def home():
