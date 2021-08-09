@@ -8,12 +8,13 @@ from cryptography.fernet import InvalidToken
 import json
 from multiprocessing import Process
 from datetime import date
-
-def wrapTojsonHTML(content: str, appendBraces: bool = True) -> str:
-        preTag: str = '<pre style="word-wrap: break-word; white-space: pre-wrap;">'
-        return f"{{ {content} }}" if appendBraces else f"{content}"
+import os
 
 app = Flask(__name__)
+if debug:
+    app.secret_key = '\xc0\xed\xa2\x021\xe6\xfc\xaccZ08\x89+\x9f\xbb'
+else:
+    app.secret_key = os.environ.get('FLASK_SECRET')
 
 def setup_app():
     annoucementScraper = AnnoucementScraper()
@@ -27,13 +28,6 @@ def home():
     return redirect(url_for("grades_API"), 302)
 
 @app.route('/api/grades', methods=['GET', 'POST'])
-def grades_API_redirect():
-    return redirect(url_for("grades_API"))
-
-@app.route('/api/annoucements', methods=['GET'])
-def annoucements_API_redirect():
-    return redirect(url_for("annoucements_API"))
-      
 @app.route('/api/v1/grades/', methods=['GET', 'POST'])
 def grades_API():
     #Check if POST from include email and password
@@ -110,6 +104,7 @@ def validateDate(dateString: str) -> bool:
     except ValueError:
         return False
 
+@app.route('/api/annoucements', methods=['GET'])
 @app.route('/api/v1/annoucements/', methods=['GET'])
 def annoucements_API():
     if 'date' in request.args:
