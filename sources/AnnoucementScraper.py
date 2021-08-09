@@ -88,8 +88,9 @@ class AnnoucementScraper:
 
             html = session.text
             root = ET.fromstring(html)
+            
             all_annoucements: Dict[str, Dict[str, str]] = {}
-
+              
             for entry_tag in root.findall(self._getTagName("entry")):
                 date_raw = entry_tag.find(self._getTagName("published")).text
                 
@@ -120,7 +121,6 @@ class AnnoucementScraper:
             all_annoucements = sorted(all_annoucements.items())
             self._saveToDB(collections.OrderedDict(all_annoucements))
             time.sleep(60 * 60 * 24) #Seconds in a day
-
     
 if __name__ == "__main__":
     with concurrent.futures.ThreadPoolExecutor() as executor:
@@ -129,6 +129,5 @@ if __name__ == "__main__":
 
         #result1 = annoucementScraper.fetchFromDB(date_raw="2021-05-13T08:35:05+00:00")
         #print(result1)
-
     
    
