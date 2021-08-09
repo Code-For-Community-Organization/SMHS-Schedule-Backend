@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from flask import Flask, request, redirect, url_for
 from sources.AeriesScraper import Request, Period, PeriodEncoder, ValidationError
 from sources.DatabaseManager import DatabaseManager, debug
@@ -25,7 +26,16 @@ setup_app()
 
 @app.route('/', methods=['GET'])
 def home():
-    return redirect(url_for("grades_API"), 302)
+    return redirect(url_for("API"), 302)
+
+@app.route('/api/v1')
+@app.route('/api')
+def API():
+    error_info = OrderedDict()
+    error_info['Error'] = 'The API URL needs to be specified, please go to grades for student grade API or annoucements for daily annoucement API.'
+    error_info['Grades API URL'] = '/api/v1/grades'
+    error_info['Annoucements API URL'] = '/api/v1/annoucements'
+    return error_info, 404
 
 @app.route('/api/grades', methods=['GET', 'POST'])
 @app.route('/api/v1/grades/', methods=['GET', 'POST'])
