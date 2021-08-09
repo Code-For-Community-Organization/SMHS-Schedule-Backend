@@ -64,9 +64,12 @@ class AnnoucementScraper:
                 response = requests.get(f"https://www.smhs.org/fs/elements/7031?is_popup=true&post_id={annoucement_index}&show_post=true&is_draft=false")
                 html = response.text
                 soup = BeautifulSoup(html, 'html.parser')
+
                 annoucement_text = soup.findAll("div", {"class":"fsBody"})[0].text
+                annoucement_text_unescape = annoucement_text.replace("\n", "\\n")
+
                 date = self._normalizeDate(date_raw)
-                all_annoucements[date] = annoucement_text
+                all_annoucements[date] = annoucement_text_unescape
 
             all_annoucements = sorted(all_annoucements.items())
             self._saveToDB(collections.OrderedDict(all_annoucements))
@@ -76,7 +79,7 @@ class AnnoucementScraper:
 if __name__ == "__main__":
     with concurrent.futures.ThreadPoolExecutor() as executor:
         annoucementScraper = AnnoucementScraper()
-        #executor.submit(annoucementScraper.fetchAnnoucements)
+        executor.submit(annoucementScraper.fetchAnnoucements)
 
         result1 = annoucementScraper.fetchFromDB(date_raw="2021-05-13T08:35:05+00:00")
         print(result1)
