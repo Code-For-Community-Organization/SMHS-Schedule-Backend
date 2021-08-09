@@ -26,7 +26,14 @@ setup_app()
 def home():
     return redirect(url_for("grades_API"), 302)
 
+@app.route('/api/grades', methods=['GET', 'POST'])
+def grades_API_redirect():
+    return redirect(url_for("grades_API"))
 
+@app.route('/api/annoucements', methods=['GET'])
+def annoucements_API_redirect():
+    return redirect(url_for("annoucements_API"))
+      
 @app.route('/api/v1/grades/', methods=['GET', 'POST'])
 def grades_API():
     #Check if POST from include email and password
@@ -110,7 +117,7 @@ def annoucements_API():
         annoucementScraper = AnnoucementScraper()
         annoucement_result = annoucementScraper.fetchFromDB(date_raw=date)
         if annoucement_result is not None:
-            return annoucement_result
+            return json.dumps(annoucement_result)
         else:
             return f"Error: Annoucement for given date, {date} not found", 404
     else:
