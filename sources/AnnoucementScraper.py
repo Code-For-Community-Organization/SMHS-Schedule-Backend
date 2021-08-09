@@ -1,6 +1,7 @@
 from datetime import datetime
 import json
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
+from bs4.element import Tag
 import requests
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
@@ -37,14 +38,47 @@ class AnnoucementScraper:
         date = date.replace(hour=0, minute=0, second=0)
         return date.isoformat(timespec="seconds")
 
-    def fetchFromDB(self, date_raw: str) -> Optional[str]: 
+    def fetchFromDB(self, date_raw: str) -> Optional[Dict[str, str]]: 
         target_date = self._normalizeDate(date_raw)
         if debug:
             print(date_raw)
             print(target_date)
         with open(self.dbName, "r+") as db:
-            content = json.load(db)
-            return content.get(target_date)
+            #Check if file empty and try fetching annoucements if so
+            if os.stat(self.dbName).st_size == 0:
+                self.fetchAnnoucements()
+            else:
+                content = json.load(db)
+                return content.get(target_date)
+    
+    def _getBodyContent(self, soup: BeautifulSoup) -> Optional[Tag]:
+       return soup.find("div", {"class":"fsBody"})
+
+    def _getBodyText(self, soup: BeautifulSoup) -> Optional[str]:
+        annoucement_text = self._getBodyContent(soup).text
+        if annoucement_text is not None:
+            annoucement_text_unescape = annoucement_text.replace("\n", "\n")
+            return annoucement_text_unescape
+        else:
+            return None
+
+    def _getSubtitle(self, soup: BeautifulSoup) -> Optional[str]:
+        body = self._getBodyContent(soup)
+        subtitle = body.find("i")
+        if body is not None and subtitle is not None: 
+            return subtitle.text
+        else:
+            return None
+
+    def _getTitle(self, soup: BeautifulSoup) -> Optional[str]:
+        body = self._getBodyContent(soup)
+        title = body.find("b")
+
+        if body is not None and title is not None:
+            return title.text
+
+    def _stripCharacters(self, raw: str, stripping: str = "\\n") -> str:
+        return raw.strip(stripping).lstrip().lstrip()
 
     def fetchAnnoucements(self):
         while True:
@@ -54,7 +88,7 @@ class AnnoucementScraper:
 
             html = session.text
             root = ET.fromstring(html)
-            all_annoucements: Dict[str, str] = {}
+            all_annoucements: Dict[str, Dict[str, str]] = {}
 
             for entry_tag in root.findall(self._getTagName("entry")):
                 date_raw = entry_tag.find(self._getTagName("published")).text
@@ -65,29 +99,36 @@ class AnnoucementScraper:
                 html = response.text
                 soup = BeautifulSoup(html, 'html.parser')
 
-                annoucement_text = soup.findAll("div", {"class":"fsBody"})[0].text
-                annoucement_text_unescape = annoucement_text.replace("\n", "\\n")
-
                 date = self._normalizeDate(date_raw)
-                all_annoucements[date] = annoucement_text_unescape
+
+                title = self._getTitle(soup)
+                subtitle = self._getSubtitle(soup)
+
+                raw_body_text = self._getBodyText(soup)
+                if title is not None:
+                    raw_body_text = raw_body_text.replace(title, "")
+                
+                if subtitle is not None:
+                    raw_body_text = raw_body_text.replace(subtitle, "")
+
+                annoucement = {"title": title,
+                               "subtitle": subtitle,
+                               "body": self._stripCharacters(raw_body_text)}
+
+                all_annoucements[date] = annoucement
 
             all_annoucements = sorted(all_annoucements.items())
             self._saveToDB(collections.OrderedDict(all_annoucements))
             time.sleep(60 * 60 * 24) #Seconds in a day
 
-
+    
 if __name__ == "__main__":
     with concurrent.futures.ThreadPoolExecutor() as executor:
         annoucementScraper = AnnoucementScraper()
-        executor.submit(annoucementScraper.fetchAnnoucements)
+        annoucementScraper.fetchAnnoucements()
 
-        result1 = annoucementScraper.fetchFromDB(date_raw="2021-05-13T08:35:05+00:00")
-        print(result1)
+        #result1 = annoucementScraper.fetchFromDB(date_raw="2021-05-13T08:35:05+00:00")
+        #print(result1)
 
-        result2 = annoucementScraper.fetchFromDB(date_raw="2021-05-14")
-        print(result2)
-        
-        result3 = annoucementScraper.fetchFromDB(date_raw="2021/05/27")
-        print(result3)
     
    
