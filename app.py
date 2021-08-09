@@ -1,10 +1,13 @@
 from flask import Flask, request, redirect, url_for
-from sources.AeriesScraper import Request, DataParser, Period, PeriodEncoder, ValidationError
+from sources.AeriesScraper import Request, Period, PeriodEncoder, ValidationError
 from sources.DatabaseManager import DatabaseManager, debug
 from sources.Student import Student
+from sources.AnnoucementScraper import AnnoucementScraper
 from typing import List, Optional
 from cryptography.fernet import InvalidToken
 import json
+from multiprocessing import Process
+from datetime import date
 
 def wrapTojsonHTML(content: str, appendBraces: bool = True) -> str:
         preTag: str = '<pre style="word-wrap: break-word; white-space: pre-wrap;">'
@@ -12,16 +15,20 @@ def wrapTojsonHTML(content: str, appendBraces: bool = True) -> str:
 
 app = Flask(__name__)
 
-app.config['DEBUG'] = True
+def setup_app():
+    annoucementScraper = AnnoucementScraper()
+    process = Process(target=annoucementScraper.fetchAnnoucements)
+    process.start()
 
+setup_app()
 
 @app.route('/', methods=['GET'])
 def home():
-    return redirect(url_for("API"), 302)
+    return redirect(url_for("grades_API"), 302)
 
 
 @app.route('/api/v1/grades/', methods=['GET', 'POST'])
-def API():
+def grades_API():
     #Check if POST from include email and password
     if 'email' in request.form and 'password' in request.form:
         email: str = request.form['email']
@@ -89,6 +96,26 @@ def API():
         errorMessage: str = "Error: Email and password cannot be empty."
         return errorMessage, 400
 
+def validateDate(dateString: str) -> bool:
+    try:
+        date.fromisoformat(dateString)
+        return True
+    except ValueError:
+        return False
+
+@app.route('/api/v1/annoucements/', methods=['GET'])
+def annoucements_API():
+    if 'date' in request.args:
+        date = request.args.get('date')
+        annoucementScraper = AnnoucementScraper()
+        annoucement_result = annoucementScraper.fetchFromDB(date_raw=date)
+        if annoucement_result is not None:
+            return annoucement_result
+        else:
+            return f"Error: Annoucement for given date, {date} not found", 404
+    else:
+        errorMessage: str = "Error: Date parameter need to be specified."
+        return errorMessage, 400
 
 if __name__ == "__main__":
     app.run(debug=True)
