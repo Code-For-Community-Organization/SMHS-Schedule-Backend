@@ -120,7 +120,7 @@ class AnnoucementScraper:
 
             all_annoucements = sorted(all_annoucements.items())
             self._saveToDB(collections.OrderedDict(all_annoucements))
-            time.sleep(60 * 60 * 24) #Seconds in a day
+            time.sleep(60  * 5) #Seconds in 5 minute
     
 if __name__ == "__main__":
     with concurrent.futures.ThreadPoolExecutor() as executor:
