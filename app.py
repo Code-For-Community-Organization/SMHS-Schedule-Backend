@@ -10,6 +10,7 @@ import json
 from multiprocessing import Process
 from datetime import date
 import os
+import sys
 
 app = Flask(__name__)
 if debug:
@@ -95,6 +96,7 @@ def grades_API():
                     errorMessage: str = f"Internal: {err}"
                     if debug:
                         print(errorMessage)
+                        sys.stdout.flush()
                     return errorMessage, 500
             else:
                 errorMessage: str = """Internal: Server encountered error when

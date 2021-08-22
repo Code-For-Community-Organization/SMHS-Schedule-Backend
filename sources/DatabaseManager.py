@@ -9,9 +9,12 @@ if __name__ == "__main__":
 else:
     from .Student import Student
     from .AeriesScraper import Period, PeriodEncoder
+import sys
 
-debug = True
+debug = False
 if 'ON_HEROKU' in os.environ:
+    print("DEBUG FALSE")
+    sys.stdout.flush()
     debug = False
 
 # typealias
@@ -24,9 +27,13 @@ jsonDB = List[Dict[str, Any]]
 class DatabaseManager:
     def __init__(self):
         if debug:
+            print("debug database name used")
+            sys.stdout.flush()
             self.databaseName = 'debug-database.json'
             key = b'udmMAqGywVOeu1JXjAt3jc2UsjgoVhoGXBPXbR1ALYE='
         else:
+            print("Production database name used")
+            sys.stdout.flush()
             self.databaseName = 'production-database.json'
             serverKey: Optional[str] = os.environ.get('CRYPTO_KEY')
             if serverKey is not None:
@@ -52,6 +59,7 @@ class DatabaseManager:
             except InvalidToken as err:
                 if debug:
                     print(err)
+                    sys.stdout.flush()
         return doesContain
 
     def _isValid(self, user: Student) -> bool:
@@ -91,11 +99,14 @@ class DatabaseManager:
             except InvalidToken as err:
                 if debug:
                     print(err)
+                    sys.stdout.flush()
 
             # Handle error where index cannot be found in list
             except ValueError as err:
                 if debug:
                     print(err)
+                    sys.stdout.flush()
+
             return False
 
     # Instance method - Create new user
@@ -126,6 +137,8 @@ class DatabaseManager:
                 except JSONDecodeError as e:
                     if debug:
                         print(f"Error decoding JSON: {e}")
+                        sys.stdout.flush()
+
                     # DB does not exist, create new
                     dbJSON: jsonDB = [newUser]
                     json.dump(dbJSON, db)
@@ -175,12 +188,17 @@ class DatabaseManager:
             except JSONDecodeError as err:
                 if debug:
                     print(err)
+                    sys.stdout.flush()
+
             except InvalidToken as err:
                 if debug:
                     print(err)
+                    sys.stdout.flush()
+
             except StopIteration as err:
                 if debug:
                     print(err)
+                    sys.stdout.flush()
 
     def getUserGrades(self, email: str) -> Optional[List[Dict[str, Any]]]:
         try:
@@ -193,6 +211,8 @@ class DatabaseManager:
         except (TypeError, InvalidToken) as err:
             if debug:
                 print(err)
+                sys.stdout.flush()
+
             return None
 
     # Instance method
@@ -209,6 +229,8 @@ class DatabaseManager:
         except (TypeError, InvalidToken) as err:
             if debug:
                 print(err)
+                sys.stdout.flush()
+
             return None
 
     def getAllUserEntryObjects(self) -> Optional[List[Student]]:
@@ -240,8 +262,12 @@ class DatabaseManager:
                             "While decoding email and/or password, it returned a None value.")
             except JSONDecodeError as err:
                 print("getAllUserEntryObjects", err)
+                sys.stdout.flush()
+
             except InvalidToken as err:
                 print(err)
+                sys.stdout.flush()
+
         return allStudents
 # ---------------- Encoding and Decoding Data ----------------
 
