@@ -2,3 +2,5 @@
 .venv
 __pycache__
 class-summary.json
+debug-database.json
+debug-DB_annoucements.json

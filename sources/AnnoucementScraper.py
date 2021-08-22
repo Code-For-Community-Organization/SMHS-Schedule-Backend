@@ -46,7 +46,7 @@ class AnnoucementScraper:
         with open(self.dbName, "r+") as db:
             #Check if file empty and try fetching annoucements if so
             if os.stat(self.dbName).st_size == 0:
-                self.fetchAnnoucements()
+                self.fetchAnnoucementsOnce()
             else:
                 content = json.load(db)
                 return content.get(target_date)
@@ -80,46 +80,49 @@ class AnnoucementScraper:
     def _stripCharacters(self, raw: str, stripping: str = "\\n") -> str:
         return raw.strip(stripping).lstrip().lstrip()
 
+    def fetchAnnoucementsOnce(self):
+        session = requests.get(self.ANNOUCEMENT_URL)
+        if not 200 <= session.status_code <= 300:
+            return
+
+        html = session.text
+        root = ET.fromstring(html)
+        
+        all_annoucements: Dict[str, Dict[str, str]] = {}
+            
+        for entry_tag in root.findall(self._getTagName("entry")):
+            date_raw = entry_tag.find(self._getTagName("published")).text
+            
+            index_tag = entry_tag.find(self._getTagName("id")).text
+            annoucement_index = index_tag.split("/", 1)[1]
+            response = requests.get(f"https://www.smhs.org/fs/elements/7031?is_popup=true&post_id={annoucement_index}&show_post=true&is_draft=false")
+            html = response.text
+            soup = BeautifulSoup(html, 'html.parser')
+
+            date = self._normalizeDate(date_raw)
+
+            title = self._getTitle(soup)
+            subtitle = self._getSubtitle(soup)
+
+            raw_body_text = self._getBodyText(soup)
+            if title is not None:
+                raw_body_text = raw_body_text.replace(title, "")
+            
+            if subtitle is not None:
+                raw_body_text = raw_body_text.replace(subtitle, "")
+
+            annoucement = {"title": title,
+                            "subtitle": subtitle,
+                            "body": self._stripCharacters(raw_body_text)}
+
+            all_annoucements[date] = annoucement
+
+        all_annoucements = sorted(all_annoucements.items())
+        self._saveToDB(collections.OrderedDict(all_annoucements))
+
     def fetchAnnoucements(self):
         while True:
-            session = requests.get(self.ANNOUCEMENT_URL)
-            if not 200 <= session.status_code <= 300:
-                return
-
-            html = session.text
-            root = ET.fromstring(html)
-            
-            all_annoucements: Dict[str, Dict[str, str]] = {}
-              
-            for entry_tag in root.findall(self._getTagName("entry")):
-                date_raw = entry_tag.find(self._getTagName("published")).text
-                
-                index_tag = entry_tag.find(self._getTagName("id")).text
-                annoucement_index = index_tag.split("/", 1)[1]
-                response = requests.get(f"https://www.smhs.org/fs/elements/7031?is_popup=true&post_id={annoucement_index}&show_post=true&is_draft=false")
-                html = response.text
-                soup = BeautifulSoup(html, 'html.parser')
-
-                date = self._normalizeDate(date_raw)
-
-                title = self._getTitle(soup)
-                subtitle = self._getSubtitle(soup)
-
-                raw_body_text = self._getBodyText(soup)
-                if title is not None:
-                    raw_body_text = raw_body_text.replace(title, "")
-                
-                if subtitle is not None:
-                    raw_body_text = raw_body_text.replace(subtitle, "")
-
-                annoucement = {"title": title,
-                               "subtitle": subtitle,
-                               "body": self._stripCharacters(raw_body_text)}
-
-                all_annoucements[date] = annoucement
-
-            all_annoucements = sorted(all_annoucements.items())
-            self._saveToDB(collections.OrderedDict(all_annoucements))
+            self.fetchAnnoucementsOnce()
             time.sleep(60  * 5) #Seconds in 5 minute
     
 if __name__ == "__main__":
