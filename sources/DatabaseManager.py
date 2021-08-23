@@ -11,7 +11,7 @@ else:
     from .AeriesScraper import Period, PeriodEncoder
 import sys
 
-debug = False
+debug = True
 if 'ON_HEROKU' in os.environ:
     print("DEBUG FALSE")
     sys.stdout.flush()
