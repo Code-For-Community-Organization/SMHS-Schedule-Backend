@@ -119,8 +119,8 @@ def validateDate(dateString: str) -> bool:
 @app.route('/api/annoucements', methods=['GET'])
 @app.route('/api/v1/annoucements/', methods=['GET'])
 def annoucements_API():
-    if 'date' in request.args:
-        date = request.args.get('date')
+    date = request.args.get('date')
+    if date is not None:
         annoucementScraper = AnnoucementScraper()
         annoucement_result = annoucementScraper.fetchFromDB(date_raw=date)
         if annoucement_result is not None:
