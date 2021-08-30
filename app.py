@@ -36,10 +36,10 @@ def API():
     error_info['Error'] = 'The API URL needs to be specified, please go to grades for student grade API or annoucements for daily annoucement API.'
     error_info['Grades API URL'] = '/api/v1/grades'
     error_info['Annoucements API URL'] = '/api/v1/annoucements'
-    return error_info, 404
+    return error_info
 
-@app.route('/api/grades', methods=['GET', 'POST'])
-@app.route('/api/v1/grades/', methods=['GET', 'POST'])
+@app.route('/api/grades', methods=['POST'])
+@app.route('/api/v1/grades/', methods=['POST'])
 def grades_API():
     #Check if POST from include email and password
     if 'email' in request.form and 'password' in request.form:
