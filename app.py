@@ -124,7 +124,7 @@ def annoucements_API():
         annoucementScraper = AnnoucementScraper()
         annoucement_result = annoucementScraper.fetchFromDB(date_raw=date)
         if annoucement_result is not None:
-            return json.dumps(annoucement_result)
+            return annoucement_result
         else:
             return f"Error: Annoucement for given date, {date} not found", 404
     else:

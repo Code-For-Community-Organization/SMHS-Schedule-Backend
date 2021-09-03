@@ -1,5 +1,5 @@
 from cryptography.fernet import Fernet, InvalidToken
-from typing import Optional, Dict, List, Any, overload
+from typing import Optional, Dict, List, Any
 import os
 import json
 from json import JSONDecodeError

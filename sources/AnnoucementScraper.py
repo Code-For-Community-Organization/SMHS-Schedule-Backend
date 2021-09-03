@@ -1,12 +1,11 @@
 from datetime import datetime
 import json
-from typing import Any, Dict, Optional, Union, cast
-from bs4.element import NavigableString, Tag
+from typing import Dict, Optional, cast
+from bs4.element import Tag
 import requests
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 import os
-import collections
 import time
 import concurrent.futures
 from dateutil import parser
@@ -15,6 +14,7 @@ import pytz
 debug = True
 if 'ON_HEROKU' in os.environ:
     debug = False
+
 
 class AnnoucementScraper:
     def __init__(self) -> None:
@@ -38,27 +38,29 @@ class AnnoucementScraper:
         date = date.replace(hour=0, minute=0, second=0)
         return date.isoformat(timespec="seconds")
 
-    def fetchFromDB(self, date_raw: str, fullHTML: bool=True) -> Optional[Dict[str, str]]: 
+    def fetchFromDB(self, date_raw: str, fullHTML: bool = True) -> Optional[Dict[str, str]]:
         target_date = self._normalizeDate(date_raw)
         if debug:
             print(date_raw)
             print(target_date)
         with open(self.dbName, "r+") as db:
-            #Check if file empty and try fetching annoucements if so
+            # Check if file empty and try fetching annoucements if so
             if os.stat(self.dbName).st_size == 0:
                 self.fetchAnnoucementsOnce()
             else:
                 content = json.load(db)
                 return content.get(target_date)
-    
+
     def _getBodyContent(self, soup: BeautifulSoup) -> Optional[Tag]:
-       optionalTag = cast(Optional[Tag], soup.find("div", {"class":"fsBody"}))
-       return optionalTag
+        optionalTag = cast(Optional[Tag], soup.find(
+            "div", {"class": "fsBody"}))
+        return optionalTag
 
     def _getBodyText(self, soup: BeautifulSoup) -> Optional[str]:
         annoucement_text = self._getBodyContent(soup)
         if annoucement_text is not None:
-            annoucement_text_unescape = annoucement_text.text.replace("\n", "\n")
+            annoucement_text_unescape = annoucement_text.text.replace(
+                "\n", "\n")
             return annoucement_text_unescape
         return None
 
@@ -66,7 +68,7 @@ class AnnoucementScraper:
         body = self._getBodyContent(soup)
         if body is not None:
             subtitle = cast(Optional[Tag], body.find("i"))
-            if subtitle is not None: 
+            if subtitle is not None:
                 return subtitle.text
         return None
 
@@ -88,8 +90,8 @@ class AnnoucementScraper:
 
         html = session.text
         root = ET.fromstring(html)
-        all_annoucements: Dict[str, Dict[str, str]] = collections.OrderedDict()
-            
+        all_annoucements: Dict[str, Dict[str, str]] = {}
+
         for entry_tag in root.findall(self._getTagName("entry")):
             date_raw = entry_tag.find(self._getTagName("published"))
             index_tag = entry_tag.find(self._getTagName("id"))
@@ -97,14 +99,11 @@ class AnnoucementScraper:
                 date_raw = cast(str, date_raw.text)
                 index_tag = cast(str, index_tag.text)
                 annoucement_index = index_tag.split("/", 1)[1]
-                response = requests.get(f"https://www.smhs.org/fs/elements/7031?is_popup=true&post_id={annoucement_index}&show_post=true&is_draft=false")
+                response = requests.get(
+                    f"https://www.smhs.org/fs/elements/7031?is_popup=true&post_id={annoucement_index}&show_post=true&is_draft=false")
                 html = response.text
                 soup = BeautifulSoup(html, 'html.parser')
                 date = self._normalizeDate(date_raw)
-
-                body = self._getBodyContent(soup)
-                if body is not None:
-                    annoucement = {"content": cast(str, body.text)}
                 title = self._getTitle(soup)
                 subtitle = self._getSubtitle(soup)
 
@@ -112,30 +111,34 @@ class AnnoucementScraper:
                 if raw_body_text is not None:
                     if title is not None:
                         raw_body_text = raw_body_text.replace(title, "")
-                    
+
                     if subtitle is not None:
                         raw_body_text = raw_body_text.replace(subtitle, "")
+                    body = self._getBodyContent(soup)
+                    if body is not None:
+                        body_html = body.prettify()
 
-                annoucement = {"title": title,
-                                "subtitle": subtitle,
-                                "body": self._stripCharacters(cast(str, raw_body_text))}
+                        annoucement = {"full_html": body_html,
+                                       "title": title,
+                                       "subtitle": subtitle,
+                                       "body": self._stripCharacters(cast(str, raw_body_text)),
+                                       "date": date}
 
-                all_annoucements[date] = annoucement
+                        all_annoucements[date] = annoucement
 
-            all_annoucements = collections.OrderedDict(sorted(all_annoucements.items()))
+            all_annoucements = dict(sorted(all_annoucements.items()))
             self._saveToDB((all_annoucements))
 
     def fetchAnnoucements(self):
         while True:
             self.fetchAnnoucementsOnce()
-            time.sleep(60  * 5) #Seconds in 5 minute
-    
+            time.sleep(60 * 5)  # Seconds in 5 minute
+
+
 if __name__ == "__main__":
     with concurrent.futures.ThreadPoolExecutor() as executor:
         annoucementScraper = AnnoucementScraper()
         annoucementScraper.fetchAnnoucements()
 
         #result1 = annoucementScraper.fetchFromDB(date_raw="2021-05-13T08:35:05+00:00")
-        #print(result1)
-    
-   
+        # print(result1)
