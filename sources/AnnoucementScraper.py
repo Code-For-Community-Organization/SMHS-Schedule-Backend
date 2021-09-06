@@ -116,7 +116,7 @@ class AnnoucementScraper:
                         raw_body_text = raw_body_text.replace(subtitle, "")
                     body = self._getBodyContent(soup)
                     if body is not None:
-                        body_html = body.prettify()
+                        body_html = body.prettify().replace('\n', '').replace('\r', '')
 
                         annoucement = {"full_html": body_html,
                                        "title": title,
