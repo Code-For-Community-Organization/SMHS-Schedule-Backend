@@ -116,8 +116,8 @@ def validateDate(dateString: str) -> bool:
     except ValueError:
         return False
 
-@app.route('/api/annoucements', methods=['GET'])
-@app.route('/api/v1/annoucements/', methods=['GET'])
+@app.route('/api/announcements', methods=['GET'])
+@app.route('/api/v1/announcements/', methods=['GET'])
 def annoucements_API():
     date = request.args.get('date')
     if date is not None:
