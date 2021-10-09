@@ -33,9 +33,9 @@ def home():
 @app.route('/api')
 def API():
     error_info = OrderedDict()
-    error_info['Error'] = 'The API URL needs to be specified, please go to grades for student grade API or annoucements for daily annoucement API.'
+    error_info['Error'] = 'The API URL needs to be specified, please go to grades for student grade API or announcements for daily annoucement API.'
     error_info['Grades API URL'] = '/api/v1/grades'
-    error_info['Annoucements API URL'] = '/api/v1/annoucements'
+    error_info['Announcements API URL'] = '/api/v1/announcements'
     return error_info
 
 @app.route('/api/grades', methods=['POST'])
