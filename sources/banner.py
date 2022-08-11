@@ -37,7 +37,3 @@ def submit():
     """
     mail.send(msg)
     return True
-
-
-if __name__ == '__main__':
-    app.run()
