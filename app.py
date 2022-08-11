@@ -13,6 +13,8 @@ import os
 import sys
 
 app = Flask(__name__)
+from sources import banner
+
 if debug:
     app.secret_key = '\xc0\xed\xa2\x021\xe6\xfc\xaccZ08\x89+\x9f\xbb'
 else:
