@@ -21,7 +21,7 @@ passlib==1.7.4
 pip-autoremove==0.9.1
 psycopg2-binary==2.9.1
 psycopg2-pool==1.1
-pycares==4.0.0
+pycares==4.2.0
 pycodestyle==2.7.0
 pycparser==2.20
 python-dateutil==2.8.1
