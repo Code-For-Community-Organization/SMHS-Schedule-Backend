@@ -4,6 +4,7 @@ from sources.AeriesScraper import Request, Period, PeriodEncoder, ValidationErro
 from sources.DatabaseManager import DatabaseManager, debug
 from sources.Student import Student
 from sources.AnnoucementScraper import AnnoucementScraper
+from flask_mail import Mail
 from typing import List, Optional
 from cryptography.fernet import InvalidToken
 import json
@@ -12,7 +13,20 @@ from datetime import date
 import os
 import sys
 
+from sources.banner import send_email
+
 app = Flask(__name__)
+sender = 'example@gmail.com'
+
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = sender
+app.config['MAIL_PASSWORD'] = 'wnhidjasvwxudaqh' # Needs to be received in a 2FA account with app passwords (google)
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+
+mail = Mail(app)
+
 if debug:
     app.secret_key = '\xc0\xed\xa2\x021\xe6\xfc\xaccZ08\x89+\x9f\xbb'
 else:
@@ -130,6 +144,13 @@ def annoucements_API():
     else:
         errorMessage: str = "Error: Date parameter need to be specified."
         return errorMessage, 400
+
+
+@app.route("/api/submit", methods=["POST"])
+@app.route("/api/v1/submit", methods=["POST"])
+def submit():
+    content = request.json
+    send_email(content)
 
 if __name__ == "__main__":
     app.run(debug=True)
