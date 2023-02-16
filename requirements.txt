@@ -33,5 +33,5 @@ soupsieve==2.2.1
 SQLAlchemy==1.4.22
 toml==0.10.2
 urllib3==1.26.6
-Werkzeug==2.0.1
+Werkzeug==2.2.3
 Flask-Mail==0.9.1
